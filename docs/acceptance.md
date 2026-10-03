@@ -95,4 +95,8 @@ TC-010：发布前 `swift test` 20 项全部通过（0.373 秒，不含编译）
 
 SHA-256：`092d5be7eb61b6b94e0d15be9465273347d9be402cc8aea59fd2a42198adae73`。
 
-REQ-010/011 的远端提交与上传下载校验在发布后记录。此次上传为 private 仓库的 prerelease，不扩大已有系统流程和续航验证范围；整体产品证据评分仍为 88/100。
+REQ-010 / AC-010：代码与 README 已推送至 `yangbo-s/codex-usage-rings` 的 `main`。版本标签 `v0.2.0` 解析到提交 `d5335e476a2b5f1191e1dfea4004c2e3179eac19`，与本次应用源码提交一致；随后仅追加发布验收记录。
+
+REQ-011 / AC-011 / TC-011：[GitHub Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.2.0) 已发布，`isDraft=false`、`isPrerelease=true`；ZIP 和 SHA256SUMS.txt 均为 uploaded。GitHub 返回的 ZIP SHA-256 与上方值一致。从 GitHub 回下载两个附件后，校验清单通过，且两个文件与本地原件逐字节一致。临时解包/下载目录已清理。
+
+仓库保持 private，发布为 prerelease，不扩大已有系统流程和续航验证范围。REQ-009/010/011 发布交付项均通过；整体产品证据评分仍为 88/100，待验证的实际系统行为仍按上文保留。
