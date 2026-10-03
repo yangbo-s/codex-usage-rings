@@ -1,0 +1,223 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-03T22:43:16.537743Z",
+  "title": "Design System: Usage Rings",
+  "extensions": {
+    "colorMeta": {
+      "ring-green": {
+        "role": "primary",
+        "displayName": "进度绿"
+      },
+      "menu-ring-green": {
+        "role": "primary",
+        "displayName": "主环亮绿"
+      },
+      "inner-ring-green": {
+        "role": "primary",
+        "displayName": "内环浅绿"
+      },
+      "ink-green-light": {
+        "role": "primary",
+        "displayName": "浅色外观文字绿"
+      },
+      "ink-green-dark": {
+        "role": "primary",
+        "displayName": "深色外观文字绿"
+      },
+      "secondary-text-light": {
+        "role": "neutral",
+        "displayName": "浅色外观次级文字"
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "面板标题",
+        "purpose": "总览与账户设置标题。"
+      },
+      "title": {
+        "displayName": "账户名称",
+        "purpose": "账户行的主要文字。"
+      },
+      "value": {
+        "displayName": "reset 数值与空状态标题",
+        "purpose": "账户右侧 reset 次数及空状态标题。"
+      },
+      "percentage": {
+        "displayName": "环内剩余百分比",
+        "purpose": "基础起始字号；按直径缩放，再自适应缩小以适配环内空间。使用 NSFont.monospacedDigitSystemFont。"
+      },
+      "body": {
+        "displayName": "正文",
+        "purpose": "操作与一般说明。"
+      },
+      "label": {
+        "displayName": "标签",
+        "purpose": "账户方案、提示和控件说明；局部 medium 或 semibold。"
+      },
+      "caption": {
+        "displayName": "小注释",
+        "purpose": "reset 标签、重置时间和更新时间。"
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "popover-animation",
+        "value": "NSPopover.animates = false",
+        "purpose": "面板直接显示；圆环无持续动画，同步期间仅显示系统 ProgressView。"
+      }
+    ],
+    "breakpoints": [],
+    "native": {
+      "platform": "macOS 13+ / SwiftUI + AppKit",
+      "measurementUnit": "macOS logical point (pt)",
+      "extraction": "Manual inspection of native Swift sources and four v0.2 offscreen renders; no web detector ran.",
+      "dynamicAppearance": {
+        "primaryText": "SwiftUI Color.primary / NSColor.labelColor",
+        "secondaryTextDark": "NSColor.secondaryLabelColor",
+        "surface": "regularMaterial",
+        "staleArcsAndResetStrokes": "NSColor.secondaryLabelColor",
+        "ringTrack": "NSColor.labelColor, alpha 0.18",
+        "barTrack": "Color.primary, opacity 0.08",
+        "selectedAccount": "Color.primary, opacity 0.025"
+      },
+      "ringGeometry": {
+        "source": "Sources/CodexUsageRings/RingRenderer.swift",
+        "scale": "diameter / menuDiameter",
+        "singleStrokeWidth": "3.8pt × scale",
+        "nestedOuterStrokeWidth": "1.65pt × scale",
+        "nestedInnerStrokeWidth": "1.45pt × scale",
+        "nestedInnerRadius": "8.5pt × scale",
+        "outerRadius": "diameter / 2 - outerWidth / 2 - 0.6pt × scale",
+        "resetStrokeWidth": "2pt × scale",
+        "resetFirstX": "diameter + 5pt × scale",
+        "resetPitch": "4pt × scale",
+        "resetVerticalInset": "5pt × scale",
+        "resetCanvasExtra": "(4 + count × 4)pt × scale when count > 0",
+        "percentageFit": "Start at typography.percentage × scale; shrink by 0.2pt × scale until the text diagonal fits 2 × holeRadius - 0.5pt × scale, with a 4pt × scale loop bound.",
+        "imageIsTemplate": false
+      },
+      "layout": {
+        "source": "Sources/CodexUsageRings/Views.swift; Sources/CodexUsageRings/Application.swift",
+        "overviewHeight": "330pt if empty; otherwise min(560, 335 + (accountCount - 1) × 80)pt",
+        "statusItemWidth": "rendered image width + 6pt",
+        "panelAccountResets": "includesResets: false; count displayed as adjacent text"
+      },
+      "components": [
+        {
+          "name": "Account ring",
+          "source": "Sources/CodexUsageRings/RingRenderer.swift",
+          "behavior": "Outer long window + inner 5-hour window when both exist; thicker single ring otherwise. Center shows outer remaining percentage. Each available reset is one adjacent stroke."
+        },
+        {
+          "name": "Account row",
+          "source": "Sources/CodexUsageRings/Views.swift",
+          "nativeStyles": [
+            "Button .plain",
+            "NSImage via RingRenderer",
+            "Color.primary.opacity(0.025) when selected"
+          ],
+          "behavior": "Select account to reveal actual window rows; reset count appears on the right."
+        },
+        {
+          "name": "Connection buttons",
+          "source": "Sources/CodexUsageRings/Views.swift",
+          "nativeStyles": [
+            ".borderedProminent",
+            ".bordered",
+            ".controlSize(.large) in management"
+          ],
+          "behavior": "Disabled while connecting or awaiting login."
+        },
+        {
+          "name": "Account name",
+          "source": "Sources/CodexUsageRings/Views.swift",
+          "nativeStyles": [
+            "TextField .roundedBorder"
+          ],
+          "behavior": "Up to 32 characters; native focus and editing feedback."
+        },
+        {
+          "name": "Login at launch",
+          "source": "Sources/CodexUsageRings/Views.swift; Sources/CodexUsageRings/LoginAtLaunch.swift",
+          "nativeStyles": [
+            "Toggle .switch"
+          ],
+          "behavior": "No automatic registration; actual system status is refreshed. Pending approval keeps the request switch on and explicitly says automatic launch is not enabled. Changes disable the switch; errors are visible."
+        },
+        {
+          "name": "Quota detail",
+          "source": "Sources/CodexUsageRings/Views.swift",
+          "nativeStyles": [
+            "Capsule track and remaining fill",
+            "monospacedDigit()",
+            "accessibilityElement(children: .combine)"
+          ],
+          "behavior": "Named actual windows, remaining percentages, reset times and used percentages; no window selector."
+        }
+      ],
+      "energy": {
+        "source": "Sources/UsageCore/RefreshPolicy.swift; Sources/CodexUsageRings/UsageStore.swift; Sources/CodexUsageRings/Application.swift",
+        "normalInterval": "300s",
+        "lowPowerInterval": "900s",
+        "panelSnapshotMinimumAge": "60s",
+        "sleep": "Timer invalidated; query clients stopped.",
+        "continuousAnimation": false
+      },
+      "evidence": {
+        "kind": "native-offscreen",
+        "files": [
+          ".impeccable/review/v2/rings-light.png",
+          ".impeccable/review/v2/rings-dark.png",
+          ".impeccable/review/v2/settings-light.png",
+          ".impeccable/review/v2/settings-dark.png"
+        ],
+        "shippingRasterAssets": [
+          {
+            "source": "Resources/Brand/usage-rings-logo.png",
+            "packaged": "Resources/AppIcon.icns",
+            "provenance": "Resources/Brand/usage-rings-logo.prompt.txt"
+          }
+        ],
+        "unverified": [
+          "Actual desktop click paths",
+          "Login at launch after reboot",
+          "Long-duration battery consumption"
+        ]
+      },
+      "previewPolicy": "No HTML/CSS facsimiles or synthetic tonal ramps: native controls and dynamic system colors remain authoritative. Native components and offscreen evidence are recorded here; the web snippet array is intentionally empty."
+    }
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "绿色圆环，原生顶栏",
+    "overview": "每个已连接账户对应一个绿色圆环入口，环内直接显示剩余百分比；额度周期、重置时间和账户设置在原生弹出面板中呈现。界面使用系统字体、SF Symbols 和 macOS 控件，保持紧凑、清楚、低干扰。\n\n这是 v0.2 当前实现的记录，主要依据 `Sources/CodexUsageRings/Views.swift`、`RingRenderer.swift`、`Application.swift` 与 `LoginAtLaunch.swift`。尺寸均为 macOS 逻辑点，前置 token 不代表网页 CSS 配置；系统动态色、材质和控件外观继续由原生 API 决定。无演示模式，也不提供置顶或额度周期切换控件。",
+    "keyCharacteristics": [
+      "一账户一入口：两种额度使用外长内短的同心环，单窗口使用粗单环。",
+      "中心数字显示外环剩余额度，右侧每条竖线代表一次可用 banked reset。",
+      "系统材质、系统字体和原生表单控件支持明暗外观。",
+      "无持续动画；刷新与状态提示优先服务低耗电和可读性。"
+    ],
+    "rules": [
+      {
+        "name": "The Remaining Rule",
+        "body": "弧长和额度条长度都表示剩余额度；中心数字取外环窗口，详情文字明确该窗口名称。",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "**Do** 保持一账户一入口，按真实窗口使用外长内短双环或粗单环。",
+      "**Do** 让中心百分比与外环一致，并逐条显示实际可用 reset。",
+      "**Do** 用文字绿承载小字号绿色文字，并在明暗外观检查可读性。",
+      "**Do** 保留系统控件、键盘焦点和辅助标签，让 macOS 管理原生反馈。",
+      "**Do** 用文字区分未知、过期、等待批准和真实已同步状态。"
+    ],
+    "donts": [
+      "**Don't** 恢复演示、置顶或额度周期切换控件。",
+      "**Don't** 为缺失窗口或未知 reset 数量生成推测的环或竖线。",
+      "**Don't** 为原生材质、系统动态色或系统圆角杜撰固定 CSS token。",
+      "**Don't** 加入持续动画或绕过既有低耗电刷新节奏。",
+      "**Don't** 将离屏 QA 渲染宣称为实际桌面截图、点击验证或电池续航证据。"
+    ]
+  }
+}

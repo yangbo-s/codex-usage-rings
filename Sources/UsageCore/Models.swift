@@ -1,0 +1,172 @@
+import Foundation
+
+public struct UsageWindow: Codable, Equatable {
+    public var usedPercent: Double?
+    public var windowDurationMins: Int?
+    public var resetsAt: Double?
+
+    public init(usedPercent: Double?, windowDurationMins: Int?, resetsAt: Double?) {
+        self.usedPercent = usedPercent
+        self.windowDurationMins = windowDurationMins
+        self.resetsAt = resetsAt
+    }
+
+    public var remaining: Double? {
+        guard let usedPercent, usedPercent.isFinite else { return nil }
+        return min(100, max(0, 100 - usedPercent))
+    }
+
+    public var percentage: String {
+        remaining.map { "\(Int($0.rounded()))%" } ?? "—"
+    }
+
+    public var title: String {
+        guard let minutes = windowDurationMins, minutes > 0 else { return "额度窗口" }
+        if minutes == 10_080 { return "每周额度" }
+        if minutes % 1_440 == 0 { return "\(minutes / 1_440) 天额度" }
+        if minutes % 60 == 0 { return "\(minutes / 60) 小时额度" }
+        return "\(minutes) 分钟额度"
+    }
+
+    public func resetDescription(now: Date = Date()) -> String {
+        guard let resetsAt, resetsAt.isFinite, resetsAt > 0 else { return "重置时间未知" }
+        let seconds = resetsAt - now.timeIntervalSince1970
+        guard seconds > 0 else { return "等待额度更新" }
+        // Round up so a future reset never claims to have already happened.
+        let minutes = min(Int(ceil(min(seconds, 315_360_000) / 60)), 5_256_000)
+        if minutes >= 1_440 { return "\(minutes / 1_440) 天 \((minutes % 1_440) / 60) 小时后重置" }
+        if minutes >= 60 { return "\(minutes / 60) 小时 \(minutes % 60) 分钟后重置" }
+        return "\(minutes) 分钟后重置"
+    }
+}
+
+public struct RateSnapshot: Codable, Equatable {
+    public var limitId: String?
+    public var limitName: String?
+    public var planType: String?
+    public var primary: UsageWindow?
+    public var secondary: UsageWindow?
+
+    public init(primary: UsageWindow?, secondary: UsageWindow?, planType: String? = nil) {
+        self.primary = primary
+        self.secondary = secondary
+        self.planType = planType
+    }
+}
+
+public struct RateResponse: Decodable {
+    public var rateLimits: RateSnapshot?
+    public var rateLimitsByLimitId: [String: RateSnapshot]?
+    public var rateLimitResetCredits: ResetCredits?
+
+    public struct ResetCredits: Decodable {
+        public var availableCount: Int?
+    }
+
+    public var codex: RateSnapshot? {
+        if let value = rateLimitsByLimitId?["codex"] { return value }
+        if let rateLimits { return rateLimits }
+        return rateLimitsByLimitId?.sorted { $0.key < $1.key }.first?.value
+    }
+
+    public var usage: AccountUsage? {
+        codex.map { AccountUsage(limits: $0, bankedResetCount: rateLimitResetCredits?.availableCount) }
+    }
+}
+
+public struct AccountUsage: Equatable {
+    public var limits: RateSnapshot
+    public var bankedResetCount: Int?
+
+    public init(limits: RateSnapshot, bankedResetCount: Int?) {
+        self.limits = limits
+        // A missing or malformed count is unknown, never an invented zero.
+        self.bankedResetCount = bankedResetCount.flatMap { $0 >= 0 ? $0 : nil }
+    }
+
+    public var rings: RingPresentation {
+        let windows = [limits.primary, limits.secondary].compactMap { $0 }
+        let fiveHour = windows.first { $0.windowDurationMins == 300 }
+        let other = windows.filter { $0.windowDurationMins != 300 }
+            .max { ($0.windowDurationMins ?? 0) < ($1.windowDurationMins ?? 0) }
+        // Only real windows are drawn; a lone five-hour window is a single ring.
+        return RingPresentation(outer: other ?? fiveHour,
+                                inner: other == nil ? nil : fiveHour,
+                                bankedResetCount: bankedResetCount)
+    }
+}
+
+public struct RingPresentation: Equatable {
+    public var outer: UsageWindow?
+    public var inner: UsageWindow?
+    public var bankedResetCount: Int?
+
+    public init(outer: UsageWindow? = nil, inner: UsageWindow? = nil, bankedResetCount: Int? = nil) {
+        self.outer = outer
+        self.inner = inner
+        self.bankedResetCount = bankedResetCount
+    }
+
+    public var percentage: String { outer?.percentage ?? "—" }
+    public var isNested: Bool { inner != nil }
+}
+
+public struct AccountResponse: Decodable {
+    public struct Account: Decodable {
+        public var type: String
+        public var email: String?
+        public var planType: String?
+    }
+    public var account: Account?
+}
+
+public enum ProfileKind: String, Codable {
+    case local, managed
+    // Decode and discard old preview records without discarding real accounts.
+    case legacyDemo = "demo"
+}
+
+public struct Profile: Codable, Identifiable, Equatable {
+    public var id: String
+    public var name: String
+    public var kind: ProfileKind
+    public init(id: String = UUID().uuidString, name: String, kind: ProfileKind) {
+        self.id = id
+        self.name = name
+        self.kind = kind
+    }
+}
+
+public struct Settings: Codable, Equatable {
+    public var profiles: [Profile]
+    public var autoConnectLocal: Bool
+
+    public init(profiles: [Profile] = [], autoConnectLocal: Bool = true) {
+        self.profiles = profiles.filter { $0.kind != .legacyDemo }
+        self.autoConnectLocal = autoConnectLocal
+    }
+
+    private enum CodingKeys: String, CodingKey { case profiles, autoConnectLocal }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let saved = try container.decode([Profile].self, forKey: .profiles)
+        profiles = saved.filter { $0.kind != .legacyDemo }
+        autoConnectLocal = try container.decodeIfPresent(Bool.self, forKey: .autoConnectLocal) ?? profiles.isEmpty
+    }
+}
+
+public enum ClientError: LocalizedError {
+    case unavailable, notLoggedIn, unsupportedAccount, timeout, stopped, protocolError, server(String)
+    public var errorDescription: String? {
+        switch self {
+        case .unavailable: return "未找到 Codex CLI。请安装 Codex，或设置 CODEX_CLI_PATH 后重试。"
+        case .notLoggedIn: return "账户尚未登录，请完成登录后重试。"
+        case .unsupportedAccount: return "此账户使用 API Key，无法读取订阅额度。请使用 ChatGPT 账户登录。"
+        case .timeout: return "读取超时，请检查网络后重试。"
+        case .stopped: return "Codex 连接已断开，请重试。"
+        case .protocolError: return "Codex 返回了无法识别的数据，请更新 Codex 后重试。"
+        case .server(let message): return "Codex：\(message)"
+        }
+    }
+}

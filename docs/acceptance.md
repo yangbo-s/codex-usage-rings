@@ -1,0 +1,98 @@
+# 本机验收记录
+
+日期：2026-10-03，版本 0.2。范围：真实多账户圆环、百分比/同心环/reset 竖线、登录启动设置和低耗电运行。
+
+结论：新版应用已构建并启动，本机一个真实账户已连接；20 项测试通过。原生离屏渲染、真实只读查询、空闲资源采样通过。实际菜单点击、多账户真实 OAuth、重启登录与长期电池耗电仍未验证，因此不声明正式验收全部通过。
+
+## 追踪矩阵
+
+| 需求 / 验收 | 实现与证据 | 结果 |
+| --- | --- | --- |
+| REQ-001 / AC-001 真实账户逐个增加 | Models、UsageStore、Application；TC-001,004,006 | 无 runtime demo；实际 settings 仅 1 个 local 账户；未知时 1 个入口 |
+| REQ-002 / AC-002 百分比及单双环 | RingRenderer、Models、Views；TC-001,003,007 | 明暗渲染、100/0/未知、5h 位置互换和单窗口测试通过；真实顶栏文字大小未截图验证 |
+| REQ-003 / AC-003 设置和迁移 | UsageStore；TC-004 | 旧 demo 剔除、真实账户保留、重建 Store、删除最后账户、损坏文件保护通过 |
+| REQ-004 / AC-004 真实数据与隔离 | CodexClient；TC-002,005 | 本机接口读取通过；独立目录、分包、错误、超时/退出测试通过；第二个真实账户登录未运行 |
+| REQ-005 / AC-005 构建与启动 | SwiftPM、build-app.sh；TC-006 | release 构建、签名验证、Info.plist、启动进程均通过 |
+| REQ-006 / AC-006 reset 竖线 | Models、RingRenderer；TC-002,007 | authoritative availableCount、缺失/0/负数/明细不全测试通过，0/2/3 根线渲染通过；真实接口读取成功 |
+| REQ-007 / AC-007 登录启动 | LoginAtLaunch、Views；TC-008 | 默认无注册、开启/关闭、待批准和失败替身测试通过；未修改真实登录项或重启 Mac |
+| REQ-008 / AC-008 低耗电 | RefreshPolicy、UsageStore；TC-009、进程采样 | 5/15 分钟与缓存/退避测试通过，查询后释放子进程；空闲 CPU 0.0%；睡眠/唤醒和低电量系统事件仅源码检查，未做真实切换和电池测试 |
+
+## 已执行证据
+
+- `USAGE_RINGS_SNAPSHOT_DIR="$PWD/.impeccable/review/v2" swift test`：20 项通过，0.701 秒（不含编译）。
+- 修正测试截图的动态外观上下文后，定向 `swift test --filter ringGeometryFitsPercentAndCountsEveryReset`：1 项通过，0.424 秒。修正只影响测试截图，不改变生产代码；之后仅整理测试缩进。
+- `bash scripts/build-app.sh`：release 构建成功，3.48 秒；产物 `dist/Codex Usage Rings.app`。
+- `codesign --verify --verbose=2 "dist/Codex Usage Rings.app"`：valid on disk / satisfies its Designated Requirement。
+- `plutil -lint Resources/Info.plist`：OK。
+- `open "dist/Codex Usage Rings.app" --args --show` 后已确认进程运行，路径指向本次产物。
+- 真实 `--probe` 已成功读取账户类型、实际额度周期及 banked reset 数量。发布文档不保留个人账户套餐与余量快照；未输出邮箱或 token，未兑换 reset。
+- 启动后只检查设置元数据：profiles=1、kinds=[local]、autoConnectLocal=false。
+
+原生离屏证据：`.impeccable/review/v2/rings-light.png`、`rings-dark.png`、`settings-light.png`、`settings-dark.png`。圆环板明确标注“测试输入”，仅存在测试目标中。图像由 AppKit / NSHostingView 渲染，**不是实际菜单栏截图，也不证明真实点击已通过**。
+
+独立界面复核结论：`ship`，限定为提供的原生离屏图与源码证据；确认百分比、单双环、逐个 reset、明暗设置页和节能生命周期，无实质阻断项。未扩大为桌面交互、重启登录或续航验证。
+
+## 资源观测
+
+当前 Mac，release 产物，1 个真实账户，无持续登录操作。`ps` 两次空闲采样：
+
+| 应用运行时长 | CPU | RSS | 累计 CPU 时间 | 自有直接子进程 |
+| --- | ---: | ---: | ---: | --- |
+| 10 秒 | 0.0% | 58,640 KiB（57.3 MiB） | 0.14 秒 | 此次未采 |
+| 2 分 06 秒 | 0.0% | 55,280 KiB（54.0 MiB） | 0.14 秒 | 无，pgrep 返回 1 |
+
+第二次原始记录：`.impeccable/review/v2/idle-samples.jsonl`。首次采样保留于执行输出。两个样本之间累计 CPU 未增长到显示精度，未观察到后台查询进程常驻。
+
+这是短时空闲观测，未覆盖完整刷新周期、联网波动、多账户规模、每次查询峰值或长时间电池消耗；不能据此给出“每小时耗电百分比”或续航保证。实现通过低频计时、容差、睡眠暂停、串行读取、读完关进程和失败退避减少无效开销。
+
+## 测试清单
+
+Core（11）：remainingPercentHandlesBoundariesAndUnknown、decodesLegacyAndPrefersCodexBucket、nullAndInvalidDataNeverBecomeFullQuota、resetTimesNeverShowNegativeOrFalseReset、labelsUseActualWindowDuration、settingsRoundTripPreservesRealAccounts、migratesPreviewSettingsWithoutLosingRealAccounts、nestedRingsFollowDurationNotPosition、unknownWindowIsNotInventedAsFiveHours、bankedResetCountIsAuthoritativeAndOptional、powerPolicyCoalescesAndBacksOff。
+
+App（6）：fragmentedResponsesAndIndependentHomes、serverErrorsPropagateWithoutHanging、timeoutAndProcessExitReleaseRequests、metadataPersistsAndRemovingLastAccountStaysEmpty、unreadableSettingsArePreserved、successfulUsageReadLeavesNoQueryProcess。
+
+Login（2）：loginSettingDefaultsOffAndFollowsSystem、pendingApprovalAndFailuresAreNotReportedAsEnabled。
+
+Rendering（1）：ringGeometryFitsPercentAndCountsEveryReset。
+
+## 失败、修复和未运行项
+
+- 测试初次编译遇到 Swift Testing 宏嵌套限制，拆开 require 后全量通过。
+- 首次圆环浅色离屏图受 AppKit 动态色上下文影响生成了深色；显式指定绘制外观后定向通过并重新检查浅深色。
+- 早期原生 CUA 分别按路径和 bundle ID 选择应用均超时；此次不把离屏图冒充系统截图。实际菜单栏位置、点击、键盘/VoiceOver 和刘海屏挤压仍缺证据。
+- 第二个真实账户 OAuth、登录续期、系统批准登录项后重启、真实睡眠/唤醒和低电量切换未执行。
+- 未进行长时功耗测量、完整刷新周期采样、多账户资源压测、跨 macOS 版本测试、Developer ID 签名或公证。
+
+## 质量评分
+
+100 分制证据评分，不是认证，也不替代未完成的实际验收。
+
+| 项目 | 得分 | 依据与扣分 |
+| --- | ---: | --- |
+| 需求与验收覆盖 | 23/25 | 当前需求逐项实现，实际 UI 与重启登录证据未取得 |
+| 功能正确性与边界 | 22/25 | 真实读取、空值、异常、迁移通过，完整 OAuth/系统事件待验 |
+| 测试充分性与结果 | 16/20 | 20 测试、离屏渲染、资源采样通过，缺端到端与长期耗电 |
+| 架构与接口 | 9/10 | 数据/绘制/系统登录/省电策略分层，CLI 发现依赖本机安装路径 |
+| 代码质量与安全 | 9/10 | 无第三方依赖、不打印令牌、目录隔离，独立账户使用文件凭据 |
+| 文档与交付 | 9/10 | 运行产物、测试、使用说明与限制齐全，未正式分发 |
+| 合计 | 88/100 | 可在本机使用，未声称所有 P1 实际验收通过 |
+
+剩余人工路径：点击顶栏环核对比例与线条 → 账户与设置开启登录启动并按系统提示批准 → 下次正常登录 Mac 检查自动启动。额外账户由用户自行完成官方浏览器登录；耗电需单独开展覆盖多次刷新和睡眠唤醒的长时测量。
+
+## 2026-10-03 图标补充
+
+新增简约 SaaS 应用图标：绿色开口环和独立竖线，深色圆角底，外围真实透明。内置 image_gen 生成原始 PNG（1254 × 1254、RGBA 8-bit）；提示词与来源保存在 Resources/Brand。`build-icon.sh` 用系统 sips 缩放并用 iconutil 打包 16–1024px 共 10 个图标表示；原图保持不变。
+
+`iconutil` 在沙箱中首次返回 Invalid Iconset，使用系统工具执行权限后成功；反向解包验证和小尺寸视觉检查通过。应用 build、plist、图标复制一致性和 codesign 校验通过。只修改静态资产、plist 与打包脚本，未修改 Swift 刷新逻辑，因此没有重跑数据测试，也没有将新的刷新建议写成已实施行为。Finder 的图标缓存展示未做 GUI 验证。
+
+## v0.2.0 发布前验证
+
+REQ-009 / AC-009：README 已补齐安装、Release 下载、系统/架构、Codex 登录依赖、圆环说明、登录启动、刷新策略、数据位置、问题排查、源码构建与已知限制。应用功能与实际实现保持一致。
+
+TC-010：发布前 `swift test` 20 项全部通过（0.373 秒，不含编译）；`build-app.sh` 与 `package-release.sh` 成功。应用二进制为 arm64，LC_BUILD_VERSION 的 minos 为 13.0。shell 语法、Info.plist 与设计 JSON 校验通过。
+
+实际交付包：`Codex-Usage-Rings-v0.2.0-macos-arm64.zip`，1,583,659 bytes。包解压后主程序与原始构建一致、图标一致、严格签名校验通过。ZIP 内没有账户配置、凭据或构建缓存。`SHA256SUMS.txt` 本地检查通过。
+
+SHA-256：`092d5be7eb61b6b94e0d15be9465273347d9be402cc8aea59fd2a42198adae73`。
+
+REQ-010/011 的远端提交与上传下载校验在发布后记录。此次上传为 private 仓库的 prerelease，不扩大已有系统流程和续航验证范围；整体产品证据评分仍为 88/100。
