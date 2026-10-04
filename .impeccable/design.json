@@ -1,20 +1,40 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-04T00:19:43.584473Z",
+  "generatedAt": "2026-10-04T00:33:52.841072Z",
   "title": "Design System: Usage Rings",
   "extensions": {
     "colorMeta": {
-      "ring-green": {
+      "usage-green-light": {
         "role": "primary",
-        "displayName": "进度绿"
+        "displayName": "浅色外观充足绿"
       },
-      "menu-ring-green": {
+      "usage-green-dark": {
         "role": "primary",
-        "displayName": "主环亮绿"
+        "displayName": "深色外观充足绿"
       },
-      "inner-ring-green": {
-        "role": "primary",
-        "displayName": "内环浅绿"
+      "usage-blue-light": {
+        "role": "secondary",
+        "displayName": "浅色外观中段蓝"
+      },
+      "usage-blue-dark": {
+        "role": "secondary",
+        "displayName": "深色外观中段蓝"
+      },
+      "usage-yellow-light": {
+        "role": "secondary",
+        "displayName": "浅色外观低段黄"
+      },
+      "usage-yellow-dark": {
+        "role": "secondary",
+        "displayName": "深色外观低段黄"
+      },
+      "usage-red-light": {
+        "role": "secondary",
+        "displayName": "浅色外观临界红"
+      },
+      "usage-red-dark": {
+        "role": "secondary",
+        "displayName": "深色外观临界红"
       },
       "ink-green-light": {
         "role": "primary",
@@ -71,32 +91,34 @@
     "native": {
       "platform": "macOS 13+ / SwiftUI + AppKit",
       "measurementUnit": "macOS logical point (pt)",
-      "extraction": "Inspection of native Swift sources, current direction contract and independent v3 finish review of six native offscreen renders; no web detector ran.",
+      "extraction": "Inspection of native Swift sources, current direction contract and independent v4 finish review of eight native offscreen renders; no web detector ran.",
       "dynamicAppearance": {
         "primaryText": "SwiftUI Color.primary / NSColor.labelColor",
         "secondaryTextDark": "NSColor.secondaryLabelColor",
         "surface": "regularMaterial",
-        "staleArcsAndResetStrokes": "NSColor.secondaryLabelColor",
+        "staleArcsAndResetStrokes": "NSColor.secondaryLabelColor; quota fills use the same stale treatment",
         "ringTrack": "NSColor.labelColor, alpha 0.18",
         "barTrack": "Color.primary, opacity 0.08",
-        "selectedAccount": "Color.primary, opacity 0.025"
+        "selectedAccount": "Color.primary, opacity 0.025",
+        "zeroRingTrack": "Resolved usage color, alpha 0.55; no progress arc"
       },
       "ringGeometry": {
         "source": "Sources/CodexUsageRings/RingRenderer.swift",
         "scale": "diameter / menuDiameter",
-        "singleStrokeWidth": "2.2pt × scale",
-        "nestedOuterStrokeWidth": "1.25pt × scale",
-        "nestedInnerStrokeWidth": "1.15pt × scale",
-        "nestedInnerRadius": "7pt × scale",
+        "singleStrokeWidth": "2pt × scale",
+        "nestedOuterStrokeWidth": "1.15pt × scale",
+        "nestedInnerStrokeWidth": "1.05pt × scale",
+        "nestedInnerRadius": "6.2pt × scale",
         "outerRadius": "diameter / 2 - outerWidth / 2 - 0.6pt × scale",
-        "resetStrokeWidth": "1.2pt × scale",
+        "resetStrokeWidth": "Exactly outerStrokeWidth(nested:diameter:), shared with the current outer ring",
         "resetFirstX": "diameter + 3.5pt × scale",
         "resetPitch": "3pt × scale",
-        "resetVerticalInset": "4.5pt × scale",
+        "resetVerticalInset": "4pt × scale",
         "resetCanvasExtra": "(3 + count × 3)pt × scale when count > 0",
         "imageIsTemplate": false,
-        "numberFit": "Start at typography.ring-number × scale; shrink by 0.2pt × scale until the text diagonal fits 2 × holeRadius - 0.5pt × scale, with a 4pt × scale loop bound.",
-        "centerContent": "Rounded outer remaining number without %; unknown is —. Detail rows, tooltips and accessibility labels retain percentage semantics."
+        "numberFit": "Start at typography.ring-number × scale; use CoreText glyph-path bounds and shrink by 0.05pt × scale until their diagonal fits 2 × holeRadius - 0.6pt × scale, with a 4pt × scale loop bound. Center using the glyph bounds so 100 is as large as possible within this clearance.",
+        "centerContent": "Rounded outer remaining number without %; unknown is —. Detail rows, tooltips and accessibility labels retain percentage semantics. Full appears only in a renderer test comparison, never as an application mode.",
+        "resetPathHeight": "10pt × scale"
       },
       "layout": {
         "source": "Sources/CodexUsageRings/Views.swift; Sources/CodexUsageRings/Application.swift",
@@ -108,7 +130,7 @@
         {
           "name": "Account ring",
           "source": "Sources/CodexUsageRings/RingRenderer.swift",
-          "behavior": "Outer long window + inner 5-hour window when both exist; thicker single ring otherwise. Center shows outer remaining number without %. Each available reset is one adjacent thin stroke."
+          "behavior": "Outer long window + inner 5-hour window when both exist; thicker single ring otherwise. Each window uses its own rounded remaining-color band. Center shows outer remaining number without %. Each reset is an adjacent green stroke exactly matching the outer stroke width; stale resets are gray."
         },
         {
           "name": "Account row",
@@ -163,7 +185,7 @@
             "monospacedDigit()",
             "accessibilityElement(children: .combine)"
           ],
-          "behavior": "Named actual windows, remaining percentages, reset times and used percentages; no window selector."
+          "behavior": "Named actual windows, remaining percentages, reset times and used percentages; no window selector. Remaining fills share the same rounded-value adaptive palette and stale treatment as the rings."
         }
       ],
       "energy": {
@@ -172,17 +194,20 @@
         "lowPowerInterval": "900s",
         "panelSnapshotMinimumAge": "60s",
         "sleep": "Timer invalidated; query clients stopped.",
-        "continuousAnimation": false
+        "continuousAnimation": false,
+        "refreshDiscussion": "Optional intervals and real-time refresh are discussion-only; no setting, default interval or behavior changed."
       },
       "evidence": {
         "kind": "native-offscreen",
         "files": [
-          ".impeccable/review/v3/rings-light.png",
-          ".impeccable/review/v3/rings-dark.png",
-          ".impeccable/review/v3/overview-light.png",
-          ".impeccable/review/v3/overview-dark.png",
-          ".impeccable/review/v3/settings-light.png",
-          ".impeccable/review/v3/settings-dark.png"
+          ".impeccable/review/v4/rings-light.png",
+          ".impeccable/review/v4/rings-dark.png",
+          ".impeccable/review/v4/overview-light.png",
+          ".impeccable/review/v4/overview-dark.png",
+          ".impeccable/review/v4/settings-light.png",
+          ".impeccable/review/v4/settings-dark.png",
+          ".impeccable/review/v4/full-comparison-light.png",
+          ".impeccable/review/v4/full-comparison-dark.png"
         ],
         "shippingRasterAssets": [
           {
@@ -199,11 +224,13 @@
           "Login at launch after reboot",
           "Long-duration battery consumption"
         ],
-        "review": ".impeccable/review/v3/finish-review.md",
+        "review": ".impeccable/review/v4/finish-review.md",
         "disposition": "ship — limited to static native presentation and source inspection",
-        "tests": "25 tests passed in the parent implementation run; not repeated during documentation.",
-        "revisionBasis": "User desktop screenshots showed v2 rings were oversized; v3 reduces ring size and strokes.",
-        "desktopAttempt": "CUA timed out during this turn; offscreen renders do not certify desktop interaction."
+        "tests": "27 tests passed in the parent implementation run; not repeated during documentation.",
+        "revisionBasis": "User screenshots and additional requests led to the 18pt core, four independent remaining-color bands, reset/outer stroke equality and a maximized numeric 100 that clears the ring.",
+        "desktopAttempt": "The earlier CUA attempt timed out; no new desktop CUA attempt ran in v4. Offscreen renders do not certify desktop interaction.",
+        "inspection": "All eight v4 renders were opened and inspected by the parent and independent reviewer; static/source review found no material fixes.",
+        "powerMeasurement": "No new energy measurement in v4; long-duration battery consumption remains unverified."
       },
       "previewPolicy": "No HTML/CSS facsimiles or synthetic tonal ramps: native controls and dynamic system colors remain authoritative. Native components and offscreen evidence are recorded here; the web snippet array is intentionally empty.",
       "autoHide": {
@@ -218,17 +245,30 @@
         "scheduling": "Event driven, at most one one-shot Timer; only while visible, pointer outside, text editing inactive and auto-hide enabled.",
         "cancellation": "Pointer return, editing focus, disabling and closing cancel pending work. Ending editing outside the panel starts the full delay. Generation checks reject stale callbacks.",
         "polling": false,
-        "desktopEvidence": "Actual hover/focus event integration and perceived delay remain unverified because the CUA attempt timed out."
+        "desktopEvidence": "Actual hover/focus event integration and perceived delay remain unverified after the earlier CUA timeout; no new desktop attempt ran in v4."
+      },
+      "usageBands": {
+        "source": "Sources/UsageCore/UsageBand.swift; Sources/CodexUsageRings/UsagePalette.swift",
+        "value": "Clamp finite remaining percentage to 0–100, then round to match the displayed integer.",
+        "bands": {
+          "75–100": "usage-green-light / usage-green-dark",
+          "50–74": "usage-blue-light / usage-blue-dark",
+          "25–49": "usage-yellow-light / usage-yellow-dark",
+          "0–24": "usage-red-light / usage-red-dark"
+        },
+        "windowBehavior": "Outer and inner windows resolve independently; quota detail fills use the same palette. Unknown or stale values use NSColor.secondaryLabelColor.",
+        "resetBehavior": "Always adaptive usage green regardless of the remaining band; stale resets use NSColor.secondaryLabelColor."
       }
     }
   },
   "components": [],
   "narrative": {
-    "northStar": "绿色圆环，原生顶栏",
-    "overview": "每个已连接账户对应一个细绿色圆环入口，环内以不带 `%` 的数字显示剩余百分比；额度周期、重置时间和账户设置在原生弹出面板中呈现。界面使用系统字体、SF Symbols 和 macOS 控件，保持紧凑、清楚、低干扰。\n\n这是 v0.3 当前实现的记录，主要依据 `Sources/CodexUsageRings/Views.swift`、`RingRenderer.swift`、`Application.swift`、`PanelAutoHide.swift`、`LoginAtLaunch.swift` 与 `Sources/UsageCore/Models.swift`。尺寸均为 macOS 逻辑点，前置 token 不代表网页 CSS 配置；系统动态色、材质和控件外观继续由原生 API 决定。无演示模式，也不提供置顶或额度周期切换控件。",
+    "northStar": "余量圆环，原生顶栏",
+    "overview": "每个已连接账户对应一个按余量分色的细圆环入口，环内以不带 `%` 的数字显示剩余百分比；额度周期、重置时间和账户设置在原生弹出面板中呈现。界面使用系统字体、SF Symbols 和 macOS 控件，保持紧凑、清楚、低干扰。\n\n这是 v4 视觉修订的实现记录，主要依据 `Sources/CodexUsageRings/Views.swift`、`RingRenderer.swift`、`UsagePalette.swift`、`Application.swift`、`PanelAutoHide.swift`、`LoginAtLaunch.swift` 与 `Sources/UsageCore/UsageBand.swift`、`Models.swift`。尺寸均为 macOS 逻辑点，前置 token 不代表网页 CSS 配置；系统动态色、材质和控件外观继续由原生 API 决定。无演示模式，也不提供置顶或额度周期切换控件。",
     "keyCharacteristics": [
       "一账户一入口：两种额度使用外长内短的同心环，单窗口使用较厚单环。",
-      "中心数字显示外环剩余额度且不带 `%`，右侧每条细竖线代表一次可用 banked reset。",
+      "中心数字显示外环剩余额度且不带 `%`；内外环各自按显示整数选择绿、蓝、黄、红，详情条保持一致。",
+      "右侧每条绿色竖线代表一次可用 banked reset，线宽与当前外环相同。",
       "系统材质、系统字体和原生表单控件支持明暗外观。",
       "面板支持可配置的鼠标移出自动收起；原生展开收起遵循减少动态效果，无持续动画。"
     ],
@@ -237,18 +277,24 @@
         "name": "The Remaining Rule",
         "body": "弧长和额度条长度都表示剩余额度；中心数字取外环窗口，详情文字明确该窗口名称。",
         "section": "colors"
+      },
+      {
+        "name": "The Band Rule",
+        "body": "内外环独立按各自剩余百分比四舍五入后的显示整数取色，详情条复用同一分段规则；reset 保持绿色，过期状态统一转灰。",
+        "section": "colors"
       }
     ],
     "dos": [
       "**Do** 保持一账户一入口，按真实窗口使用外长内短双环或较厚单环。",
       "**Do** 让中心数字与外环一致，省略环内 `%`，并逐条显示实际可用 reset。",
+      "**Do** 让内外环与各自详情条共享四段余量规则，reset 保持绿色且与外环同宽。",
       "**Do** 用文字绿承载小字号绿色文字，并在明暗外观检查可读性。",
       "**Do** 保留系统控件、键盘焦点和辅助标签，让 macOS 管理原生反馈。",
       "**Do** 在原生展开收起时尊重 Reduce Motion，并在移回或编辑时取消自动收起计时。",
       "**Do** 用文字区分未知、过期、等待批准和真实已同步状态。"
     ],
     "donts": [
-      "**Don't** 恢复演示、置顶或额度周期切换控件。",
+      "**Don't** 恢复演示、置顶或额度周期切换控件，也不要把测试中的 `Full` 作为应用显示模式。",
       "**Don't** 为缺失窗口或未知 reset 数量生成推测的环或竖线。",
       "**Don't** 为原生材质、系统动态色或系统圆角杜撰固定 CSS token。",
       "**Don't** 加入持续动画或绕过既有低耗电刷新节奏。",

@@ -96,6 +96,19 @@ import Testing
     #expect(RingPresentation().number == "—")
 }
 
+@Test func usageBandsMatchVisibleRoundedRemaining() {
+    for (remaining, expected) in [
+        (0.0, UsageBand.critical), (24.49, .critical), (24.5, .low), (25, .low),
+        (49.49, .low), (49.5, .medium), (50, .medium), (74.49, .medium),
+        (74.5, .high), (75, .high), (100, .high), (-5, .critical), (110, .high)
+    ] {
+        #expect(UsageBand(remaining: remaining) == expected)
+    }
+    for unknown in [nil, Double.nan, .infinity, -.infinity] as [Double?] {
+        #expect(UsageBand(remaining: unknown) == .unknown)
+    }
+}
+
 @Test func migratesPreviewSettingsWithoutLosingRealAccounts() throws {
     let old = #"{"showDemo":true,"profiles":[{"id":"demo-personal","name":"个人账户","kind":"demo","isPinned":true,"window":"primary"},{"id":"real","name":"我的账号","kind":"managed","isPinned":false,"window":"secondary"}]}"#
     let settings = try JSONDecoder().decode(Settings.self, from: Data(old.utf8))

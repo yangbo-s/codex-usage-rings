@@ -1,5 +1,25 @@
 # 本机验收记录
 
+## v0.4.0 余量分色与满额文字
+
+2026-10-03。当前修订范围：四色、缩小顶栏环、reset 同宽及 `100/Full` 比较。用户澄清 `100` 尽量大，但不碰环线。可调刷新仅讨论，未实现。
+
+| 需求 / 用例 | 证据 | 结果 |
+| --- | --- | --- |
+| REQ-016 / TC-016 | UsageBand、UsagePalette、Views；usageBandsMatchVisibleRoundedRemaining | 75/50/25 边界两侧、四舍五入、0/100、范围外及未知/非有限值通过；单双环独立颜色与详情条浅深色图一致 |
+| REQ-017 / TC-017 | RingRenderer；resetStrokesMatchOuterRingInRenderedPixels | 顶栏 18pt、详情 36pt；单/双环实际绘制像素中，reset 与外环同宽（抗锯齿允许两像素差）；独立保持绿色 |
+| REQ-018 / TC-017 | CoreText 字形边界；ringGeometryFitsNumbersAndCountsEveryReset；full-comparison-light/dark.png | 100/Full 均可适配；100 保留可见间隙、纯数字语义；Full 只在渲染测试对照中使用 |
+
+- `USAGE_RINGS_SNAPSHOT_DIR="$PWD/.impeccable/review/v4" swift test` 26 项通过（1.041 秒，不含编译），导出 8 张图；新增像素同宽验证后 `swift test` 27 项全部通过（0.344 秒）。业务、进程、刷新和自动收起回归无失败。
+- 原生八张离屏图分别为 `rings/overview/settings/full-comparison` 的浅色与深色图，主代理与独立 reviewer 均逐张打开；审查 disposition 为 **ship**，无 material fixes，仅覆盖本轮静态呈现与源码检查。
+- 同为系统半粗体、等宽数字 8pt 时，NSString 文字布局框：100 为 16.36 × 10pt，Full 为 14.88 × 10pt。生产排版改用 CoreText 实际字形轮廓净空，在圆内保留至少 0.3pt 的径向间隙（随直径缩放）。两个数字表达的可读性和语义一致性优先，应用不引入 Full 切换设置。
+- release 构建成功（3.29 秒），arm64、版本 0.4.0/build 4；Info.plist 检查通过。DMG 完整性、只读挂载、Applications 链接、全部 4 个应用文件哈希及严格代码签名验证通过；测试挂载已卸载清理。
+- DMG 为 `Codex-Usage-Rings-v0.4.0-macos-arm64.dmg`，3,735,438 bytes；SHA-256：`28dbec26329587d9081e8a6da58925d5e79699e65bf7cdb103aa24931260489e`。
+
+没有再次执行此前连续超时的原生 CUA；本轮不声称真实菜单栏像素、hover/focus、VoiceOver、系统事件或能耗已现场验证。没有执行秒级轮询，也没有据查询次数计算耗电百分比；当前刷新仍为 300/900 秒。旧版短时空闲样本不充当 v0.4.0 或可调刷新方案的能耗证据。
+
+整体验收证据评分保持 **88/100**：覆盖 23/25（缺实机交互），边界 23/25（颜色、净空和像素线宽通过），测试 16/20（27 项通过，缺端到端和电池对照），架构 9/10（共享分段与配色），代码安全 9/10（无新依赖、无凭据改动），文档交付 8/10（预览包、非公证）。后续提升应优先验证真实桌面和电池场景，不扩大静态审查结论。
+
 ## v0.3.0 界面细节与收起控制
 
 2026-10-03。本节是当前修订证据；下方 v0.2 记录为历史基线。新增需求依据用户的实际桌面截图以及“鼠标移出后计时”的确认。

@@ -4,14 +4,47 @@ import Testing
 import UsageCore
 @testable import CodexUsageRings
 
+@Test @MainActor func resetStrokesMatchOuterRingInRenderedPixels() throws {
+    _ = NSApplication.shared
+    let appearance = try #require(NSAppearance(named: .aqua))
+    for nested in [false, true] {
+        let outer = UsageWindow(usedPercent: 0, windowDurationMins: 10080, resetsAt: nil)
+        let inner = UsageWindow(usedPercent: 90, windowDurationMins: 300, resetsAt: nil)
+        let rings = AccountUsage(limits: RateSnapshot(primary: outer, secondary: nested ? inner : nil), bankedResetCount: 1).rings
+        var tiff: Data?
+        appearance.performAsCurrentDrawingAppearance {
+            tiff = RingRenderer.image(rings, diameter: 90).tiffRepresentation
+        }
+        let data = try #require(tiff)
+        let bitmap = try #require(NSBitmapImageRep(data: data))
+        var runs: [Int] = []
+        var width = 0
+        for x in 0..<bitmap.pixelsWide {
+            let color = try #require(bitmap.colorAt(x: x, y: bitmap.pixelsHigh / 2)?.usingColorSpace(.deviceRGB))
+            let green = color.alphaComponent > 0.5 && color.greenComponent > color.redComponent * 1.4 && color.greenComponent > color.blueComponent * 1.2
+            if green { width += 1 }
+            else if width > 0 { runs.append(width); width = 0 }
+        }
+        if width > 0 { runs.append(width) }
+        #expect(runs.count == 3) // Outer circle on both sides, then one reset stroke.
+        if runs.count == 3 {
+            #expect(abs(runs[0] - runs[2]) <= 2)
+            #expect(abs(runs[1] - runs[2]) <= 2)
+        }
+    }
+}
+
 @Test @MainActor func ringGeometryFitsNumbersAndCountsEveryReset() async throws {
     _ = NSApplication.shared
     func window(_ used: Double, _ minutes: Int) -> UsageWindow {
         UsageWindow(usedPercent: used, windowDurationMins: minutes, resetsAt: nil)
     }
     let variants: [(String, RingPresentation)] = [
-        ("单环 · 64% · 0 reset", AccountUsage(limits: RateSnapshot(primary: window(36, 10080), secondary: nil), bankedResetCount: 0).rings),
-        ("双环 · 周 64% / 5h 28% · 2 reset", AccountUsage(limits: RateSnapshot(primary: window(72, 300), secondary: window(36, 10080)), bankedResetCount: 2).rings),
+        ("绿 · 75% · 1 reset", AccountUsage(limits: RateSnapshot(primary: window(25, 10080), secondary: nil), bankedResetCount: 1).rings),
+        ("蓝 · 50% · 1 reset", AccountUsage(limits: RateSnapshot(primary: window(50, 10080), secondary: nil), bankedResetCount: 1).rings),
+        ("黄 · 25% · 1 reset", AccountUsage(limits: RateSnapshot(primary: window(75, 10080), secondary: nil), bankedResetCount: 1).rings),
+        ("红 · 24% · 1 reset", AccountUsage(limits: RateSnapshot(primary: window(76, 10080), secondary: nil), bankedResetCount: 1).rings),
+        ("双环 · 周 80% / 5h 12% · 2 reset", AccountUsage(limits: RateSnapshot(primary: window(88, 300), secondary: window(20, 10080)), bankedResetCount: 2).rings),
         ("单环 · 100% · 3 reset", AccountUsage(limits: RateSnapshot(primary: window(0, 10080), secondary: nil), bankedResetCount: 3).rings),
         ("双环 · 100% / 5h 100%", AccountUsage(limits: RateSnapshot(primary: window(0, 300), secondary: window(0, 10080)), bankedResetCount: 0).rings),
         ("已用完 · 0%", AccountUsage(limits: RateSnapshot(primary: window(100, 10080), secondary: nil), bankedResetCount: 0).rings),
@@ -20,13 +53,12 @@ import UsageCore
     for (_, rings) in variants {
         let image = RingRenderer.image(rings)
         let expected = CGFloat((rings.bankedResetCount ?? 0) > 0 ? 3 + (rings.bankedResetCount ?? 0) * 3 : 0)
-        #expect(image.size.width == 20 + expected)
-        #expect(image.size.height == 20)
-        let hole: CGFloat = rings.isNested ? 7 - 0.575 : 10 - 2.2 - 0.6
+        #expect(image.size.width == 18 + expected)
+        #expect(image.size.height == 18)
+        let hole: CGFloat = rings.isNested ? 6.2 - 0.525 : 9 - 2 - 0.6
         #expect(!rings.number.contains("%"))
-        let attributes = RingRenderer.textAttributes(for: rings.number, holeRadius: hole, scale: 1)
-        let size = (rings.number as NSString).size(withAttributes: attributes)
-        #expect(hypot(size.width, size.height) <= hole * 2 - 0.5)
+        let label = RingRenderer.labelLayout(rings.number, holeRadius: hole, scale: 1)
+        #expect(hypot(label.bounds.width, label.bounds.height) <= hole * 2 - 0.6)
     }
     // Only tests carry synthetic examples; the application has no preview/demo mode.
     guard let output = ProcessInfo.processInfo.environment["USAGE_RINGS_SNAPSHOT_DIR"] else { return }
@@ -52,7 +84,7 @@ import UsageCore
     for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
         let drawingAppearance = try #require(NSAppearance(named: appearance))
         NSApp.appearance = drawingAppearance
-        let board = NSImage(size: NSSize(width: 600, height: 420), flipped: true) { rect in
+        let board = NSImage(size: NSSize(width: 600, height: 590), flipped: true) { rect in
             drawingAppearance.performAsCurrentDrawingAppearance {
                 NSColor.windowBackgroundColor.setFill(); rect.fill()
                 let heading: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 16, weight: .semibold), .foregroundColor: NSColor.labelColor]
@@ -62,7 +94,7 @@ import UsageCore
                     let label: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor.labelColor]
                     (variant.0 as NSString).draw(at: NSPoint(x: 24, y: y + 6), withAttributes: label)
                     let actual = RingRenderer.image(variant.1)
-                    actual.draw(in: NSRect(x: 306, y: y + 3, width: actual.size.width, height: 20), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+                    actual.draw(in: NSRect(x: 306, y: y + 3, width: actual.size.width, height: 18), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
                     let enlarged = RingRenderer.image(variant.1, diameter: 36)
                     enlarged.draw(in: NSRect(x: 422, y: y - 6, width: enlarged.size.width, height: 36), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
                 }
@@ -70,6 +102,27 @@ import UsageCore
             return true
         }
         try save(board, to: directory.appendingPathComponent("rings-\(name).png"))
+        let comparison = NSImage(size: NSSize(width: 520, height: 230), flipped: true) { rect in
+            drawingAppearance.performAsCurrentDrawingAppearance {
+                NSColor.windowBackgroundColor.setFill(); rect.fill()
+                let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 12), .foregroundColor: NSColor.labelColor]
+                ("满额排版对比 · 左为 18pt，右为 4 倍放大 · 测试输入" as NSString).draw(at: NSPoint(x: 20, y: 16), withAttributes: attributes)
+                for (row, nested) in [false, true].enumerated() {
+                    let rings = AccountUsage(limits: RateSnapshot(primary: window(0, 10080), secondary: nested ? window(0, 300) : nil), bankedResetCount: 0).rings
+                    for (column, text) in ["100", "Full"].enumerated() {
+                        let x = CGFloat(20 + column * 260)
+                        let y = CGFloat(56 + row * 90)
+                        ("\(nested ? "双环" : "单环") · \(text)" as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: attributes)
+                        for (offset, diameter) in [(CGFloat(95), CGFloat(18)), (CGFloat(130), CGFloat(72))] {
+                            let image = RingRenderer.render(rings, stale: false, diameter: diameter, includesResets: false, label: text)
+                            image.draw(in: NSRect(x: x + offset, y: y - diameter / 2 + 12, width: diameter, height: diameter), from: .zero, operation: .sourceOver, fraction: 1, respectFlipped: true, hints: nil)
+                        }
+                    }
+                }
+            }
+            return true
+        }
+        try save(comparison, to: directory.appendingPathComponent("full-comparison-\(name).png"))
         store.managing = false
         try savePanel(store, height: 335, appearance: appearance, to: directory.appendingPathComponent("overview-\(name).png"))
         store.managing = true

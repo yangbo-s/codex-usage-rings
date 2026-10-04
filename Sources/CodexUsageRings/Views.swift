@@ -3,7 +3,6 @@ import SwiftUI
 import UsageCore
 
 enum RingStyle {
-    static let green = Color(red: 0.13, green: 0.70, blue: 0.39)
     static let secondaryText = Color(nsColor: NSColor(name: nil) { appearance in
         appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             ? NSColor.secondaryLabelColor
@@ -131,11 +130,11 @@ struct UsagePanel: View {
             if selected {
                 VStack(alignment: .leading, spacing: 13) {
                     if let outer = state.rings.outer {
-                        windowRow(outer, label: state.rings.isNested ? "外环 · \(outer.title)" : outer.title)
+                        windowRow(outer, label: state.rings.isNested ? "外环 · \(outer.title)" : outer.title, stale: state.isStale)
                     } else {
                         Text("暂无用量数据").font(.system(size: 12)).foregroundStyle(RingStyle.secondaryText)
                     }
-                    if let inner = state.rings.inner { windowRow(inner, label: "内环 · \(inner.title)") }
+                    if let inner = state.rings.inner { windowRow(inner, label: "内环 · \(inner.title)", stale: state.isStale) }
                     HStack(spacing: 6) {
                         Image(systemName: "info.circle")
                         Text("中心数字为\(state.rings.outer?.title ?? "主额度")剩余百分比；每条竖线代表一次 reset。")
@@ -157,7 +156,7 @@ struct UsagePanel: View {
         .background(selected ? Color.primary.opacity(0.025) : .clear)
     }
 
-    private func windowRow(_ window: UsageWindow, label: String) -> some View {
+    private func windowRow(_ window: UsageWindow, label: String, stale: Bool) -> some View {
         VStack(spacing: 6) {
             HStack {
                 Text(label).font(.system(size: 11, weight: .medium))
@@ -167,7 +166,7 @@ struct UsagePanel: View {
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     Capsule().fill(Color.primary.opacity(0.08))
-                    Capsule().fill(RingStyle.green)
+                    Capsule().fill(Color(nsColor: UsagePalette.color(remaining: window.remaining, stale: stale)))
                         .frame(width: geometry.size.width * CGFloat((window.remaining ?? 0) / 100))
                 }
             }
