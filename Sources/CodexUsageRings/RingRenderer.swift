@@ -4,17 +4,17 @@ import UsageCore
 /// One geometry is shared by the menu bar, detail view and render tests.
 @MainActor
 enum RingRenderer {
-    nonisolated static let menuDiameter: CGFloat = 24
+    nonisolated static let menuDiameter: CGFloat = 20
 
     static func image(_ rings: RingPresentation, stale: Bool = false,
                       diameter: CGFloat = menuDiameter, includesResets: Bool = true) -> NSImage {
         let count = includesResets ? max(0, rings.bankedResetCount ?? 0) : 0
         let scale = diameter / menuDiameter
-        let extra = count > 0 ? 4 + CGFloat(count) * 4 : 0
+        let extra = count > 0 ? 3 + CGFloat(count) * 3 : 0
         let size = NSSize(width: diameter + extra * scale, height: diameter)
         let image = NSImage(size: size, flipped: false) { _ in
             let center = NSPoint(x: diameter / 2, y: diameter / 2)
-            let outerWidth: CGFloat = (rings.isNested ? 1.65 : 3.8) * scale
+            let outerWidth: CGFloat = (rings.isNested ? 1.25 : 2.2) * scale
             let outerRadius = diameter / 2 - outerWidth / 2 - 0.6 * scale
             let green = NSColor(srgbRed: 0.16, green: 0.81, blue: 0.43, alpha: 1)
             let innerGreen = NSColor(srgbRed: 0.40, green: 0.91, blue: 0.61, alpha: 1)
@@ -22,25 +22,25 @@ enum RingRenderer {
             let color = stale ? NSColor.secondaryLabelColor : green
             stroke(center: center, radius: outerRadius, width: outerWidth,
                    remaining: rings.outer?.remaining, color: color, track: track)
-            let innerRadius = 8.5 * scale
+            let innerRadius = 7 * scale
             if let inner = rings.inner {
-                stroke(center: center, radius: innerRadius, width: 1.45 * scale,
+                stroke(center: center, radius: innerRadius, width: 1.15 * scale,
                        remaining: inner.remaining, color: stale ? .secondaryLabelColor : innerGreen, track: track)
             }
 
-            let holeRadius = rings.isNested ? innerRadius - 0.725 * scale : outerRadius - outerWidth / 2
-            let attributes = textAttributes(for: rings.percentage, holeRadius: holeRadius, scale: scale)
-            let label = NSAttributedString(string: rings.percentage, attributes: attributes)
+            let holeRadius = rings.isNested ? innerRadius - 0.575 * scale : outerRadius - outerWidth / 2
+            let attributes = textAttributes(for: rings.number, holeRadius: holeRadius, scale: scale)
+            let label = NSAttributedString(string: rings.number, attributes: attributes)
             let textSize = label.size()
             label.draw(at: NSPoint(x: center.x - textSize.width / 2, y: center.y - textSize.height / 2))
 
             // Each available reset is one line; do not infer count from the detail rows.
             for index in 0..<count {
-                let x = diameter + (5 + CGFloat(index) * 4) * scale
+                let x = diameter + (3.5 + CGFloat(index) * 3) * scale
                 let line = NSBezierPath()
-                line.move(to: NSPoint(x: x, y: 5 * scale))
-                line.line(to: NSPoint(x: x, y: diameter - 5 * scale))
-                line.lineWidth = 2 * scale
+                line.move(to: NSPoint(x: x, y: 4.5 * scale))
+                line.line(to: NSPoint(x: x, y: diameter - 4.5 * scale))
+                line.lineWidth = 1.2 * scale
                 line.lineCapStyle = .round
                 color.setStroke()
                 line.stroke()

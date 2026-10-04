@@ -1,6 +1,6 @@
 ---
 name: Usage Rings
-description: 以绿色圆环和居中百分比呈现每个 Codex 账户剩余额度的 macOS 菜单栏应用。
+description: 以细绿色圆环和居中数字呈现每个 Codex 账户剩余额度的 macOS 菜单栏应用。
 colors:
   ring-green: "color(srgb 0.13 0.70 0.39)"
   menu-ring-green: "color(srgb 0.16 0.81 0.43)"
@@ -21,7 +21,7 @@ typography:
     fontFamily: "macOS system font"
     fontSize: "14pt"
     fontWeight: 600
-  percentage:
+  ring-number:
     fontFamily: "macOS system font, monospaced digits"
     fontSize: "8pt"
     fontWeight: 600
@@ -51,11 +51,11 @@ components:
     width: "360pt"
     height: "560pt"
   account-ring:
-    width: "44pt"
-    height: "44pt"
+    width: "36pt"
+    height: "36pt"
   menu-ring-core:
-    width: "24pt"
-    height: "24pt"
+    width: "20pt"
+    height: "20pt"
   usage-bar:
     height: "4pt"
 ---
@@ -66,17 +66,17 @@ components:
 
 **Creative North Star: "绿色圆环，原生顶栏"**
 
-每个已连接账户对应一个绿色圆环入口，环内直接显示剩余百分比；额度周期、重置时间和账户设置在原生弹出面板中呈现。界面使用系统字体、SF Symbols 和 macOS 控件，保持紧凑、清楚、低干扰。
+每个已连接账户对应一个细绿色圆环入口，环内以不带 `%` 的数字显示剩余百分比；额度周期、重置时间和账户设置在原生弹出面板中呈现。界面使用系统字体、SF Symbols 和 macOS 控件，保持紧凑、清楚、低干扰。
 
-这是 v0.2 当前实现的记录，主要依据 `Sources/CodexUsageRings/Views.swift`、`RingRenderer.swift`、`Application.swift` 与 `LoginAtLaunch.swift`。尺寸均为 macOS 逻辑点，前置 token 不代表网页 CSS 配置；系统动态色、材质和控件外观继续由原生 API 决定。无演示模式，也不提供置顶或额度周期切换控件。
+这是 v0.3 当前实现的记录，主要依据 `Sources/CodexUsageRings/Views.swift`、`RingRenderer.swift`、`Application.swift`、`PanelAutoHide.swift`、`LoginAtLaunch.swift` 与 `Sources/UsageCore/Models.swift`。尺寸均为 macOS 逻辑点，前置 token 不代表网页 CSS 配置；系统动态色、材质和控件外观继续由原生 API 决定。无演示模式，也不提供置顶或额度周期切换控件。
 
 **Key Characteristics:**
-- 一账户一入口：两种额度使用外长内短的同心环，单窗口使用粗单环。
-- 中心数字显示外环剩余额度，右侧每条竖线代表一次可用 banked reset。
+- 一账户一入口：两种额度使用外长内短的同心环，单窗口使用较厚单环。
+- 中心数字显示外环剩余额度且不带 `%`，右侧每条细竖线代表一次可用 banked reset。
 - 系统材质、系统字体和原生表单控件支持明暗外观。
-- 无持续动画；刷新与状态提示优先服务低耗电和可读性。
+- 面板支持可配置的鼠标移出自动收起；原生展开收起遵循减少动态效果，无持续动画。
 
-视觉证据为 `.impeccable/review/v2/` 中的 `rings-light.png`、`rings-dark.png`、`settings-light.png` 和 `settings-dark.png`。这些图片使用测试输入进行原生离屏绘制，不是桌面截图，也不是发布资产。当前 finish review 的 ship 结论仅覆盖源码与原生离屏呈现；实际桌面点击、重启后登录启动和长期电池续航仍未验证。没有运行网页 detector。应用图标使用 Resources/Brand/usage-rings-logo.png，并转换成 Resources/AppIcon.icns 随包交付；生成来源与提示词见同目录的 usage-rings-logo.prompt.txt。菜单栏用量环仍为实时原生绘制。
+用户实际截图暴露了上一版圆环过大的问题，本轮据此缩小圆环并减细描边。当前视觉证据为 `.impeccable/review/v3/` 中 `rings`、`overview`、`settings` 各自的 `-light.png` 与 `-dark.png`，共六张。这些图片使用测试输入进行原生离屏绘制，不是桌面截图，也不是发布资产。独立 `finish-review.md` 的 ship 结论仅覆盖静态原生呈现与源码检查；本轮 25 项测试通过，CUA 桌面交互尝试超时，实际指针移出/移回、编辑与焦点、切换账户定位、展开收起观感和 Reduce Motion 行为仍未取得现场证据。重启后登录启动及长期电池续航也未验证。没有运行网页 detector。应用图标保持不变，使用 Resources/Brand/usage-rings-logo.png，并转换成 Resources/AppIcon.icns 随包交付；生成来源与提示词见同目录的 usage-rings-logo.prompt.txt。菜单栏用量环仍为实时原生绘制。
 
 ## Colors
 
@@ -100,7 +100,7 @@ components:
 
 全部文字使用系统字体，不随包提供自定义字体。面板标题、账户名、reset 数值、正文、标签和小注释对应前置 token；空状态标题也使用 value 层级。额度名称与低耗电标签使用 medium，额度百分比使用 semibold。
 
-percentage 是顶栏基础尺寸的起始字号，使用 `NSFont.monospacedDigitSystemFont`。`RingRenderer` 按绘制直径等比缩放，并以（0.2pt × 比例）逐步缩小，直到文字包围盒的对角线适配环内空间；不得把起始字号理解为固定最终字号。面板账户环复用此计算，中心数字不再使用独立的大号圆润字体。
+ring-number 是顶栏基础尺寸的起始字号，使用 `NSFont.monospacedDigitSystemFont`。`RingRenderer` 按绘制直径等比缩放，并以（0.2pt × 比例）逐步缩小，直到文字包围盒的对角线适配环内空间；不得把起始字号理解为固定最终字号。面板账户环复用此计算，中心只保留数字或未知符号，不绘制 `%`。详情文字、tooltip 和辅助标签继续表达完整百分比语义。
 
 额度详情中的数字、重置时间与已用比例使用 `monospacedDigit()`，避免数值变化造成跳动。账户名最多一行，空名称显示“未命名账户”；提示、错误与设置说明允许换行。
 
@@ -108,23 +108,23 @@ percentage 是顶栏基础尺寸的起始字号，使用 `NSFont.monospacedDigit
 
 面板固定宽度，头尾固定，中段滚动。管理面板高度由 management-panel 定义；总览无账户时高（330pt），有账户时为 `min(560, 335 + (账户数 - 1) × 80)` 逻辑点。不设网页断点或移动端布局。
 
-常规左右内边距使用 inset；账户行垂直内边距使用 row，头部使用 section，底栏使用 support。账户行左侧是带中心数字的圆环，中部是账户名称和状态，右侧是 reset 次数与标签。详情沿用同一左右边界；管理区使用账户名称输入框、移除入口、全宽连接按钮、登录启动开关及低耗电说明。
+常规左右内边距使用 inset；账户行垂直内边距使用 row，头部使用 section，底栏使用 support。账户行左侧是带中心数字的圆环，中部是账户名称和状态，右侧是 reset 次数与标签。详情沿用同一左右边界；管理区首先呈现自动收起开关及秒数，随后为账户名称输入框、移除入口、全宽连接按钮、登录启动开关及低耗电说明。
 
-顶栏圆环主体尺寸由 menu-ring-core 定义。无 reset 时状态栏入口宽（30pt）；每个入口宽度为 renderer 图像宽度加（6pt）。有 N 个 reset 时，基础图像向右额外扩展 `4 + 4 × N` 逻辑点，避免竖线覆盖圆环；账户排列交给系统状态栏。面板账户环隐藏竖线，在行右侧用数值表达 reset 次数。
+顶栏圆环主体尺寸由 menu-ring-core 定义。无 reset 时状态栏入口宽（26pt）；每个入口宽度为 renderer 图像宽度加（6pt）。有 N 个 reset 时，基础图像向右额外扩展 `3 + 3 × N` 逻辑点，避免竖线覆盖圆环；账户排列交给系统状态栏。面板账户环隐藏竖线，在行右侧用数值表达 reset 次数。
 
 ## Elevation & Depth
 
 深度来自 `NSPopover`、`regularMaterial` 和系统控件。项目没有自定义阴影 token。列表通过分隔线与轻微底色区分区域，选中账户不新增悬浮卡片。
 
-弹出面板采用 `.transient` 行为且 `animates = false`。圆环和额度条没有持续动画；同步期间使用原生小型 `ProgressView`。后台默认每 5 分钟刷新，系统低电量模式每 15 分钟；睡眠暂停，查询结束关闭查询进程。打开面板复用最近 60 秒的快照。低耗电策略是实现约束，不代表已完成长期电池续航测量。
+弹出面板采用 `.transient` 行为，展开与收起使用 `NSPopover` 原生过渡；每次操作读取系统 Reduce Motion 设置，开启“减少动态效果”时禁用过渡。切换账户时重新定位已显示的面板，不先关闭再打开。圆环和额度条没有持续动画；同步期间使用原生小型 `ProgressView`。后台默认每 5 分钟刷新，系统低电量模式每 15 分钟；睡眠暂停，查询结束关闭查询进程。打开面板复用最近 60 秒的快照。低耗电策略是实现约束，不代表已完成长期电池续航测量。
 
 ## Shapes
 
 核心几何是圆环、圆端弧线、圆端 reset 竖线和胶囊额度条。以下 renderer 几何以顶栏基础直径为基准，其他直径按比例缩放。
 
-单窗口描边（3.8pt）；同心环外描边（1.65pt），内描边（1.45pt），内环路径半径（8.5pt）。外环路径半径为 `直径 / 2 - 外描边 / 2 - 0.6`。弧线从顶部开始顺时针增长；100% 绘制完整圆，0% 只保留轨道。
+单窗口描边（2.2pt）；同心环外描边（1.25pt），内描边（1.15pt），内环路径半径（7pt）。外环路径半径为 `直径 / 2 - 外描边 / 2 - 0.6`。弧线从顶部开始顺时针增长；100% 绘制完整圆，0% 只保留轨道。
 
-每条 reset 竖线宽（2pt）、高（14pt）；第一条位于主体右侧（5pt），后续间隔（4pt），竖向居中。数值未知时中心显示“—”，未知 reset 不绘制竖线并在文字中保留未知状态。
+每条 reset 竖线路径宽（1.2pt）、高（11pt）；第一条位于主体右侧（3.5pt），后续间隔（3pt），上下路径端点各内缩（4.5pt）。数值未知时中心显示“—”，未知 reset 不绘制竖线并在文字中保留未知状态。
 
 按钮、输入框、开关和弹出容器保留系统圆角，不人为设置统一圆角值。
 
@@ -132,7 +132,7 @@ percentage 是顶栏基础尺寸的起始字号，使用 `NSFont.monospacedDigit
 
 ### Usage rings and account rows
 
-每个已连接账户生成独立 `NSStatusItem`。若同时存在长周期和 5 小时额度，外环显示长周期、内环显示 5 小时；仅一个窗口时绘制粗单环，包括仅有 5 小时额度的情况。不为缺失窗口虚构第二个环。中心百分比与外环一致。
+每个已连接账户生成独立 `NSStatusItem`。若同时存在长周期和 5 小时额度，外环显示长周期、内环显示 5 小时；仅一个窗口时绘制较厚单环，包括仅有 5 小时额度的情况。不为缺失窗口虚构第二个环。中心数字与外环一致，不附加 `%`。
 
 点击状态栏入口选择对应账户并打开详情；已打开同一账户时再次点击关闭。没有账户时保留一个未知额度入口，点击进入账户与设置。面板账户行使用 plain 按钮，点击后选择并展开该账户详情。
 
@@ -150,7 +150,11 @@ reset 数量来自接口，每一个可用 reset 对应一条相邻竖线；0 �
 
 连接中或等待登录时禁用管理区连接按钮；等待登录区提供重开登录页和取消入口。图标操作具有辅助标签，关键操作附带文字或 tooltip。错误提示使用图标或可换行文字；顶部提示可关闭。
 
-### Login at launch and energy settings
+### Auto-hide, login at launch and energy settings
+
+“自动收起面板”使用原生 `.switch`，默认开启；鼠标移出后默认等待（3 秒）。秒数字段使用 `.roundedBorder`，输入范围限制为（1–300 秒），关闭自动收起时禁用秒数字段；两项设置自动持久保存，旧配置缺少字段时采用默认值。
+
+自动收起由事件驱动，最多保留一个一次性计时器。指针回到面板、名称或延迟字段处于编辑焦点、禁用自动收起或关闭面板都会取消计时；停止编辑且指针仍在外部时重新开始完整延迟，过期回调不得关闭新状态。隐藏面板时不保留计时器，不加入周期性鼠标轮询。此处描述源码与定向测试行为，实际桌面 hover 和焦点连接仍需验证。
 
 “登录时启动”使用原生 `.switch`。应用不主动注册，初始默认关闭；每次打开面板从 `SMAppService` 读取实际系统状态，已有启用状态保留。请求变更期间禁用开关。
 
@@ -165,10 +169,11 @@ reset 数量来自接口，每一个可用 reset 对应一条相邻竖线；0 �
 ## Do's and Don'ts
 
 ### Do:
-- **Do** 保持一账户一入口，按真实窗口使用外长内短双环或粗单环。
-- **Do** 让中心百分比与外环一致，并逐条显示实际可用 reset。
+- **Do** 保持一账户一入口，按真实窗口使用外长内短双环或较厚单环。
+- **Do** 让中心数字与外环一致，省略环内 `%`，并逐条显示实际可用 reset。
 - **Do** 用文字绿承载小字号绿色文字，并在明暗外观检查可读性。
 - **Do** 保留系统控件、键盘焦点和辅助标签，让 macOS 管理原生反馈。
+- **Do** 在原生展开收起时尊重 Reduce Motion，并在移回或编辑时取消自动收起计时。
 - **Do** 用文字区分未知、过期、等待批准和真实已同步状态。
 
 ### Don't:

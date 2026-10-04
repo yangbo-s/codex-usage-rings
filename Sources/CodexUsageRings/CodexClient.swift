@@ -75,7 +75,8 @@ final class CodexClient {
         do {
             try child.run()
             _ = try await request("initialize", params: [
-                "clientInfo": ["name": "codex_usage_rings", "title": "Codex Usage Rings", "version": "0.1.0"],
+                "clientInfo": ["name": "codex_usage_rings", "title": "Codex Usage Rings",
+                               "version": Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "development"],
                 "capabilities": ["experimentalApi": false]
             ])
             try write(["method": "initialized"])

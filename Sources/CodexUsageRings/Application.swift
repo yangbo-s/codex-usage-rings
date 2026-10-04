@@ -48,20 +48,25 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
 }
 
 @MainActor
-final class MenuBarController: NSObject {
+final class MenuBarController: NSObject, NSPopoverDelegate {
     private let store: UsageStore
     private let loginAtLaunch = LoginAtLaunch()
     private var items: [String: NSStatusItem] = [:]
     private var itemOrder: [String] = []
     private let popover = NSPopover()
     private var observation: AnyCancellable?
+    private lazy var autoHide = PanelAutoHide { [weak self] in self?.close() }
 
     init(store: UsageStore) {
         self.store = store
         super.init()
         popover.behavior = .transient
-        popover.animates = false
-        popover.contentViewController = NSHostingController(rootView: UsagePanel(store: store, loginAtLaunch: loginAtLaunch))
+        popover.delegate = self
+        popover.contentViewController = NSHostingController(rootView: UsagePanel(
+            store: store, loginAtLaunch: loginAtLaunch,
+            onHover: { [weak self] inside in self?.autoHide.pointerChanged(inside: inside) },
+            onEditing: { [weak self] editing in self?.autoHide.editingChanged(editing) }
+        ))
         observation = store.objectWillChange.sink { [weak self] _ in
             DispatchQueue.main.async { self?.updateItems() }
         }
@@ -69,11 +74,14 @@ final class MenuBarController: NSObject {
     }
 
     private func updateItems() {
+        autoHide.configure(enabled: store.settings.autoHideEnabled, seconds: store.settings.autoHideDelaySeconds)
         let profiles = store.visibleProfiles
         let desired = profiles.isEmpty ? ["launcher"] : profiles.map(\.id)
         if desired != itemOrder {
             let reopen = popover.isShown
-            popover.performClose(nil)
+            // Replacing an anchor is structural; close immediately before removing its view.
+            autoHide.closed()
+            popover.close()
             items.values.forEach { NSStatusBar.system.removeStatusItem($0) }
             items.removeAll()
             // Status items are inserted from right to left; create in reverse to preserve list order.
@@ -108,8 +116,7 @@ final class MenuBarController: NSObject {
 
     @objc private func clicked(_ sender: NSStatusBarButton) {
         guard let id = items.first(where: { $0.value.button === sender })?.key else { return }
-        if popover.isShown, store.selectedID == id { popover.performClose(nil); return }
-        popover.performClose(nil)
+        if popover.isShown, (store.selectedID == id || id == "launcher") { close(); return }
         store.selectedID = id == "launcher" ? store.visibleProfiles.first?.id : id
         store.managing = id == "launcher"
         show(relativeTo: sender)
@@ -119,13 +126,31 @@ final class MenuBarController: NSObject {
         loginAtLaunch.refresh()
         Task { await store.refreshAll(minimumAge: 60) }
         NSApplication.shared.activate(ignoringOtherApps: true)
+        popover.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        let repositioning = popover.isShown
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
+        if repositioning { updatePointerAfterShowing() }
     }
+
+    private func close() {
+        autoHide.closed()
+        popover.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        popover.performClose(nil)
+    }
+
+    private func updatePointerAfterShowing() {
+        guard popover.isShown else { return }
+        let inside = popover.contentViewController?.view.window?.frame.contains(NSEvent.mouseLocation) ?? false
+        autoHide.shown(pointerInside: inside)
+    }
+
+    func popoverDidShow(_ notification: Notification) { updatePointerAfterShowing() }
+    func popoverWillClose(_ notification: Notification) { autoHide.closed() }
 
     func showFirst() {
         if let first = itemOrder.first, let button = items[first]?.button { show(relativeTo: button) }
     }
 
-    func stop() { store.stop() }
+    func stop() { autoHide.closed(); store.stop() }
 }

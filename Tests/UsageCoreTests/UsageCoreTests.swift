@@ -70,6 +70,32 @@ import Testing
     #expect(!String(decoding: encoded, as: UTF8.self).contains("token"))
 }
 
+@Test func autoHideSettingsMigrateAndClampWithoutLosingAccounts() throws {
+    let old = #"{"profiles":[{"id":"real","name":"个人","kind":"local"}],"autoConnectLocal":false}"#
+    let migrated = try JSONDecoder().decode(Settings.self, from: Data(old.utf8))
+    #expect(migrated.profiles.map(\.id) == ["real"])
+    #expect(migrated.autoHideEnabled)
+    #expect(migrated.autoHideDelaySeconds == 3)
+    for (input, expected) in [(0, 1), (-50, 1), (25, 25), (999, 300)] {
+        let json = "{\"profiles\":[],\"autoHideDelaySeconds\":\(input),\"autoHideEnabled\":false}"
+        var settings = try JSONDecoder().decode(Settings.self, from: Data(json.utf8))
+        #expect(settings.autoHideDelaySeconds == expected)
+        #expect(!settings.autoHideEnabled)
+        settings.setAutoHideDelay(input)
+        #expect(settings.autoHideDelaySeconds == expected)
+        #expect(try JSONDecoder().decode(Settings.self, from: JSONEncoder().encode(settings)) == settings)
+    }
+}
+
+@Test func ringNumbersKeepUnitsInAccessiblePercentage() {
+    for (used, number, percentage) in [(0.0, "100", "100%"), (100.0, "0", "0%"), (56.6, "43", "43%")] {
+        let rings = AccountUsage(limits: RateSnapshot(primary: UsageWindow(usedPercent: used, windowDurationMins: 10080, resetsAt: nil), secondary: nil), bankedResetCount: nil).rings
+        #expect(rings.number == number)
+        #expect(rings.percentage == percentage)
+    }
+    #expect(RingPresentation().number == "—")
+}
+
 @Test func migratesPreviewSettingsWithoutLosingRealAccounts() throws {
     let old = #"{"showDemo":true,"profiles":[{"id":"demo-personal","name":"个人账户","kind":"demo","isPinned":true,"window":"primary"},{"id":"real","name":"我的账号","kind":"managed","isPinned":false,"window":"secondary"}]}"#
     let settings = try JSONDecoder().decode(Settings.self, from: Data(old.utf8))

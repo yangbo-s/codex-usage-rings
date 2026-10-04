@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-03T22:43:16.537743Z",
+  "generatedAt": "2026-10-04T00:19:43.584473Z",
   "title": "Design System: Usage Rings",
   "extensions": {
     "colorMeta": {
@@ -42,10 +42,6 @@
         "displayName": "reset 数值与空状态标题",
         "purpose": "账户右侧 reset 次数及空状态标题。"
       },
-      "percentage": {
-        "displayName": "环内剩余百分比",
-        "purpose": "基础起始字号；按直径缩放，再自适应缩小以适配环内空间。使用 NSFont.monospacedDigitSystemFont。"
-      },
       "body": {
         "displayName": "正文",
         "purpose": "操作与一般说明。"
@@ -57,21 +53,25 @@
       "caption": {
         "displayName": "小注释",
         "purpose": "reset 标签、重置时间和更新时间。"
+      },
+      "ring-number": {
+        "displayName": "环内剩余数字",
+        "purpose": "基础起始字号；按直径缩放，再自适应缩小以适配环内空间。使用 NSFont.monospacedDigitSystemFont；仅显示数字或未知符号，不带 %。"
       }
     },
     "shadows": [],
     "motion": [
       {
         "name": "popover-animation",
-        "value": "NSPopover.animates = false",
-        "purpose": "面板直接显示；圆环无持续动画，同步期间仅显示系统 ProgressView。"
+        "value": "NSPopover.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion",
+        "purpose": "展开与收起使用系统原生过渡，每次操作读取 Reduce Motion；切换账户重新定位已显示的面板。圆环无持续动画，同步期间仅显示系统 ProgressView。"
       }
     ],
     "breakpoints": [],
     "native": {
       "platform": "macOS 13+ / SwiftUI + AppKit",
       "measurementUnit": "macOS logical point (pt)",
-      "extraction": "Manual inspection of native Swift sources and four v0.2 offscreen renders; no web detector ran.",
+      "extraction": "Inspection of native Swift sources, current direction contract and independent v3 finish review of six native offscreen renders; no web detector ran.",
       "dynamicAppearance": {
         "primaryText": "SwiftUI Color.primary / NSColor.labelColor",
         "secondaryTextDark": "NSColor.secondaryLabelColor",
@@ -84,18 +84,19 @@
       "ringGeometry": {
         "source": "Sources/CodexUsageRings/RingRenderer.swift",
         "scale": "diameter / menuDiameter",
-        "singleStrokeWidth": "3.8pt × scale",
-        "nestedOuterStrokeWidth": "1.65pt × scale",
-        "nestedInnerStrokeWidth": "1.45pt × scale",
-        "nestedInnerRadius": "8.5pt × scale",
+        "singleStrokeWidth": "2.2pt × scale",
+        "nestedOuterStrokeWidth": "1.25pt × scale",
+        "nestedInnerStrokeWidth": "1.15pt × scale",
+        "nestedInnerRadius": "7pt × scale",
         "outerRadius": "diameter / 2 - outerWidth / 2 - 0.6pt × scale",
-        "resetStrokeWidth": "2pt × scale",
-        "resetFirstX": "diameter + 5pt × scale",
-        "resetPitch": "4pt × scale",
-        "resetVerticalInset": "5pt × scale",
-        "resetCanvasExtra": "(4 + count × 4)pt × scale when count > 0",
-        "percentageFit": "Start at typography.percentage × scale; shrink by 0.2pt × scale until the text diagonal fits 2 × holeRadius - 0.5pt × scale, with a 4pt × scale loop bound.",
-        "imageIsTemplate": false
+        "resetStrokeWidth": "1.2pt × scale",
+        "resetFirstX": "diameter + 3.5pt × scale",
+        "resetPitch": "3pt × scale",
+        "resetVerticalInset": "4.5pt × scale",
+        "resetCanvasExtra": "(3 + count × 3)pt × scale when count > 0",
+        "imageIsTemplate": false,
+        "numberFit": "Start at typography.ring-number × scale; shrink by 0.2pt × scale until the text diagonal fits 2 × holeRadius - 0.5pt × scale, with a 4pt × scale loop bound.",
+        "centerContent": "Rounded outer remaining number without %; unknown is —. Detail rows, tooltips and accessibility labels retain percentage semantics."
       },
       "layout": {
         "source": "Sources/CodexUsageRings/Views.swift; Sources/CodexUsageRings/Application.swift",
@@ -107,7 +108,7 @@
         {
           "name": "Account ring",
           "source": "Sources/CodexUsageRings/RingRenderer.swift",
-          "behavior": "Outer long window + inner 5-hour window when both exist; thicker single ring otherwise. Center shows outer remaining percentage. Each available reset is one adjacent stroke."
+          "behavior": "Outer long window + inner 5-hour window when both exist; thicker single ring otherwise. Center shows outer remaining number without %. Each available reset is one adjacent thin stroke."
         },
         {
           "name": "Account row",
@@ -136,6 +137,15 @@
             "TextField .roundedBorder"
           ],
           "behavior": "Up to 32 characters; native focus and editing feedback."
+        },
+        {
+          "name": "Panel auto-hide",
+          "source": "Sources/CodexUsageRings/Views.swift; Sources/CodexUsageRings/PanelAutoHide.swift; Sources/UsageCore/Models.swift",
+          "nativeStyles": [
+            "Toggle .switch",
+            "TextField .roundedBorder, trailing alignment"
+          ],
+          "behavior": "First settings section. Enabled by default with a 3-second delay, configurable from 1 to 300 seconds or off; preferences persist. Returning to the panel or focusing a text field cancels the countdown."
         },
         {
           "name": "Login at launch",
@@ -167,10 +177,12 @@
       "evidence": {
         "kind": "native-offscreen",
         "files": [
-          ".impeccable/review/v2/rings-light.png",
-          ".impeccable/review/v2/rings-dark.png",
-          ".impeccable/review/v2/settings-light.png",
-          ".impeccable/review/v2/settings-dark.png"
+          ".impeccable/review/v3/rings-light.png",
+          ".impeccable/review/v3/rings-dark.png",
+          ".impeccable/review/v3/overview-light.png",
+          ".impeccable/review/v3/overview-dark.png",
+          ".impeccable/review/v3/settings-light.png",
+          ".impeccable/review/v3/settings-dark.png"
         ],
         "shippingRasterAssets": [
           {
@@ -180,23 +192,45 @@
           }
         ],
         "unverified": [
-          "Actual desktop click paths",
+          "Actual desktop pointer exit/return and auto-hide timing",
+          "Text-editing focus and cancellation event integration",
+          "Popover repositioning between accounts",
+          "Perceived native open/close transitions and live Reduce Motion behavior",
           "Login at launch after reboot",
           "Long-duration battery consumption"
-        ]
+        ],
+        "review": ".impeccable/review/v3/finish-review.md",
+        "disposition": "ship — limited to static native presentation and source inspection",
+        "tests": "25 tests passed in the parent implementation run; not repeated during documentation.",
+        "revisionBasis": "User desktop screenshots showed v2 rings were oversized; v3 reduces ring size and strokes.",
+        "desktopAttempt": "CUA timed out during this turn; offscreen renders do not certify desktop interaction."
       },
-      "previewPolicy": "No HTML/CSS facsimiles or synthetic tonal ramps: native controls and dynamic system colors remain authoritative. Native components and offscreen evidence are recorded here; the web snippet array is intentionally empty."
+      "previewPolicy": "No HTML/CSS facsimiles or synthetic tonal ramps: native controls and dynamic system colors remain authoritative. Native components and offscreen evidence are recorded here; the web snippet array is intentionally empty.",
+      "autoHide": {
+        "source": "Sources/CodexUsageRings/PanelAutoHide.swift; Sources/CodexUsageRings/Application.swift; Sources/CodexUsageRings/Views.swift; Sources/UsageCore/Models.swift",
+        "defaultEnabled": true,
+        "defaultDelaySeconds": 3,
+        "allowedDelaySeconds": {
+          "minimum": 1,
+          "maximum": 300
+        },
+        "persistence": "Settings.autoHideEnabled and Settings.autoHideDelaySeconds; missing fields decode to defaults.",
+        "scheduling": "Event driven, at most one one-shot Timer; only while visible, pointer outside, text editing inactive and auto-hide enabled.",
+        "cancellation": "Pointer return, editing focus, disabling and closing cancel pending work. Ending editing outside the panel starts the full delay. Generation checks reject stale callbacks.",
+        "polling": false,
+        "desktopEvidence": "Actual hover/focus event integration and perceived delay remain unverified because the CUA attempt timed out."
+      }
     }
   },
   "components": [],
   "narrative": {
     "northStar": "绿色圆环，原生顶栏",
-    "overview": "每个已连接账户对应一个绿色圆环入口，环内直接显示剩余百分比；额度周期、重置时间和账户设置在原生弹出面板中呈现。界面使用系统字体、SF Symbols 和 macOS 控件，保持紧凑、清楚、低干扰。\n\n这是 v0.2 当前实现的记录，主要依据 `Sources/CodexUsageRings/Views.swift`、`RingRenderer.swift`、`Application.swift` 与 `LoginAtLaunch.swift`。尺寸均为 macOS 逻辑点，前置 token 不代表网页 CSS 配置；系统动态色、材质和控件外观继续由原生 API 决定。无演示模式，也不提供置顶或额度周期切换控件。",
+    "overview": "每个已连接账户对应一个细绿色圆环入口，环内以不带 `%` 的数字显示剩余百分比；额度周期、重置时间和账户设置在原生弹出面板中呈现。界面使用系统字体、SF Symbols 和 macOS 控件，保持紧凑、清楚、低干扰。\n\n这是 v0.3 当前实现的记录，主要依据 `Sources/CodexUsageRings/Views.swift`、`RingRenderer.swift`、`Application.swift`、`PanelAutoHide.swift`、`LoginAtLaunch.swift` 与 `Sources/UsageCore/Models.swift`。尺寸均为 macOS 逻辑点，前置 token 不代表网页 CSS 配置；系统动态色、材质和控件外观继续由原生 API 决定。无演示模式，也不提供置顶或额度周期切换控件。",
     "keyCharacteristics": [
-      "一账户一入口：两种额度使用外长内短的同心环，单窗口使用粗单环。",
-      "中心数字显示外环剩余额度，右侧每条竖线代表一次可用 banked reset。",
+      "一账户一入口：两种额度使用外长内短的同心环，单窗口使用较厚单环。",
+      "中心数字显示外环剩余额度且不带 `%`，右侧每条细竖线代表一次可用 banked reset。",
       "系统材质、系统字体和原生表单控件支持明暗外观。",
-      "无持续动画；刷新与状态提示优先服务低耗电和可读性。"
+      "面板支持可配置的鼠标移出自动收起；原生展开收起遵循减少动态效果，无持续动画。"
     ],
     "rules": [
       {
@@ -206,10 +240,11 @@
       }
     ],
     "dos": [
-      "**Do** 保持一账户一入口，按真实窗口使用外长内短双环或粗单环。",
-      "**Do** 让中心百分比与外环一致，并逐条显示实际可用 reset。",
+      "**Do** 保持一账户一入口，按真实窗口使用外长内短双环或较厚单环。",
+      "**Do** 让中心数字与外环一致，省略环内 `%`，并逐条显示实际可用 reset。",
       "**Do** 用文字绿承载小字号绿色文字，并在明暗外观检查可读性。",
       "**Do** 保留系统控件、键盘焦点和辅助标签，让 macOS 管理原生反馈。",
+      "**Do** 在原生展开收起时尊重 Reduce Motion，并在移回或编辑时取消自动收起计时。",
       "**Do** 用文字区分未知、过期、等待批准和真实已同步状态。"
     ],
     "donts": [

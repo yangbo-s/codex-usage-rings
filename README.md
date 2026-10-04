@@ -4,15 +4,15 @@
 
 # Codex Usage Rings
 
-把 Codex 剩余额度放进 Mac 顶部菜单栏。一个账户一个绿色圆环，百分比直接显示在环内，点击查看额度周期、重置时间和账户设置。
+把 Codex 剩余额度放进 Mac 顶部菜单栏。一个账户一个绿色圆环，剩余百分比用纯数字显示在环内（省略 %），点击查看额度周期、重置时间和账户设置。
 
-[下载 v0.2.0](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.2.0) · [使用与验证范围](docs/acceptance.md) · [更新记录](docs/releases/v0.2.0.md)
+[下载 v0.3.0](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.3.0) · [使用与验证范围](docs/acceptance.md) · [更新记录](docs/releases/v0.3.0.md)
 
 ## 安装
 
 当前预编译包适用于 **Apple Silicon（M 系列芯片）和 macOS 13 或更高版本**。使用安装包无需安装 Swift 或 Xcode。
 
-1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.2.0) 下载 `Codex-Usage-Rings-v0.2.0-macos-arm64.dmg`。
+1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.3.0) 下载 `Codex-Usage-Rings-v0.3.0-macos-arm64.dmg`。
 2. 双击 DMG，将里面的 `Codex Usage Rings.app` 拖到 `Applications` 文件夹入口。复制完成后推出磁盘映像，再从“应用程序”打开。
 3. 先确保本机已安装 Codex CLI 或 Codex / ChatGPT 桌面应用，并使用 **ChatGPT 账户**登录。此工具复用本机 Codex 获取订阅用量；API Key 登录不提供这种额度。
 4. 首次启动会尝试连接本机已有登录。成功后，菜单栏出现一个真实账户圆环；未连接时显示一个灰色入口，点击即可连接。
@@ -27,14 +27,14 @@ Release 同时提供 `SHA256SUMS.txt`。把它与下载的 DMG 放在同一个�
 shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 ```
 
-同一 Release 保留了先前的 ZIP 作为备选；校验命令会跳过未下载的格式。仓库为私有时，下载需要有该仓库的访问权限。
+v0.3.0 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓库为私有时，下载需要有该仓库的访问权限。
 
 ## 圆环怎么看
 
 | 元素 | 含义 |
 | --- | --- |
-| 绿色弧长和中心百分比 | 剩余额度；中心数字对应外环 |
-| 粗单环 | 只有一个额度窗口，包括只有 5 小时额度的情况 |
+| 绿色弧长和中心数字 | 剩余额度；中心数字对应外环的百分比，省略 % |
+| 较厚单环 | 只有一个额度窗口，包括只有 5 小时额度的情况 |
 | 外环 + 内环 | 同时有长周期与 5 小时额度：外环显示长周期，内环显示 5 小时 |
 | 右侧绿色竖线 | 每一条表示一个可用 banked reset；工具只读取，不兑换 |
 | `—` | 当前额度未知，不能当作 0% 或 100% |
@@ -51,6 +51,12 @@ shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 - **修改昵称 / 移除账户**：名称自动保存。移除只停止展示和查询，不删除凭据、不退出 Codex。移除最后一个账户后，下次启动不会自动重新添加。
 
 本机账户与“添加其他账户”使用不同的登录目录；请在浏览器中确认选择的是期望连接的账户。
+
+## 面板自动收起
+
+在 **账户与设置 → 自动收起面板** 中调整：默认鼠标移出后 **3 秒**收起，可输入 **1–300 秒**，按 Return 或离开输入框提交，设置自动保存；关闭开关即可停用。移回面板会取消倒计时，编辑文字时暂停，结束编辑后重新计时。点击面板外部仍按 macOS 原生行为关闭。
+
+顶栏圆环为 20pt，详情圆环为 36pt；环内只显示数字，详情和悬停提示仍保留百分比单位。展开和收起使用系统过渡，遵循 macOS“减少动态效果”。仅鼠标离开可见面板时使用一次性计时器，无鼠标轮询和持续动画。
 
 ## 登录启动与省电
 
@@ -69,7 +75,7 @@ shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 
 定时器使用 20% 容差，允许系统合并唤醒，因此不承诺精确到秒。多个账户依次查询，读取完成即关闭 app-server；浏览器登录期间才临时保留相应进程，最长 5 分钟。没有持续动画或逐秒倒计时。
 
-单账户 release 版本在本机短时空闲采样为 0.0% CPU、约 54–57 MiB RSS，未残留查询子进程。这不是长时间续航测试，也不包含每次联网查询的峰值。完整范围见[验收记录](docs/acceptance.md)。
+v0.2.0 单账户 release 版本在本机短时空闲采样为 0.0% CPU、约 54–57 MiB RSS，未残留查询子进程。这不是长时间续航测试，也不包含每次联网查询的峰值。完整范围见[验收记录](docs/acceptance.md)。
 
 ## 数据与凭据
 
@@ -79,7 +85,7 @@ shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 
 ```text
 ~/Library/Application Support/Codex Usage Rings/
-├── settings.json      # 账户 ID、昵称、来源与首次自动连接标志
+├── settings.json      # 账户元数据、首次自动连接标志与面板收起偏好
 └── profiles/<id>/     # 由 Codex 维护的独立账户登录状态
 ```
 
@@ -142,9 +148,9 @@ bash scripts/package-release.sh
 
 ## 验证范围
 
-20 项自动测试覆盖额度边界、单双环、reset 数量、配置迁移、目录隔离、分包/超时/退出、查询进程释放、刷新策略及登录启动状态。原生浅深色离屏图用于检查绘制与设置页；它们不是系统菜单栏截图。
+25 项自动测试覆盖额度边界、单双环、reset 数量、配置迁移、目录隔离、分包/超时/退出、查询进程释放、刷新策略、登录启动状态及自动收起的取消、编辑暂停和设置持久化。原生浅深色离屏图用于检查绘制与设置页；它们不是系统菜单栏截图。
 
-尚未完成的验证：多账户真实 OAuth 全流程、实际菜单点击与辅助功能、重启后的登录启动、低电量及睡眠唤醒的系统实测、长时间电池耗电、跨 macOS 版本兼容。无自动更新。
+尚未完成的验证（本次原生 UI 自动化连接超时）：自动收起的桌面鼠标路径与动画观感、多账户真实 OAuth 全流程、实际菜单点击与辅助功能、重启后的登录启动、低电量及睡眠唤醒的系统实测、长时间电池耗电、跨 macOS 版本兼容。无自动更新。
 
 [实现说明](docs/implementation.md) · [设计记录](DESIGN.md) · [验收与评分](docs/acceptance.md)
 

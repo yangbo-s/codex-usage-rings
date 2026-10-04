@@ -108,6 +108,7 @@ public struct RingPresentation: Equatable {
     }
 
     public var percentage: String { outer?.percentage ?? "—" }
+    public var number: String { outer?.remaining.map { String(Int($0.rounded())) } ?? "—" }
     public var isNested: Bool { inner != nil }
 }
 
@@ -140,19 +141,33 @@ public struct Profile: Codable, Identifiable, Equatable {
 public struct Settings: Codable, Equatable {
     public var profiles: [Profile]
     public var autoConnectLocal: Bool
+    public var autoHideEnabled: Bool
+    public private(set) var autoHideDelaySeconds: Int
 
-    public init(profiles: [Profile] = [], autoConnectLocal: Bool = true) {
+    public init(profiles: [Profile] = [], autoConnectLocal: Bool = true,
+                autoHideEnabled: Bool = true, autoHideDelaySeconds: Int = 3) {
         self.profiles = profiles.filter { $0.kind != .legacyDemo }
         self.autoConnectLocal = autoConnectLocal
+        self.autoHideEnabled = autoHideEnabled
+        self.autoHideDelaySeconds = min(300, max(1, autoHideDelaySeconds))
     }
 
-    private enum CodingKeys: String, CodingKey { case profiles, autoConnectLocal }
+    public mutating func setAutoHideDelay(_ seconds: Int) {
+        autoHideDelaySeconds = min(300, max(1, seconds))
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case profiles, autoConnectLocal, autoHideEnabled, autoHideDelaySeconds
+    }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let saved = try container.decode([Profile].self, forKey: .profiles)
         profiles = saved.filter { $0.kind != .legacyDemo }
         autoConnectLocal = try container.decodeIfPresent(Bool.self, forKey: .autoConnectLocal) ?? profiles.isEmpty
+        autoHideEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoHideEnabled) ?? true
+        let seconds = try container.decodeIfPresent(Int.self, forKey: .autoHideDelaySeconds) ?? 3
+        autoHideDelaySeconds = min(300, max(1, seconds))
     }
 }
 

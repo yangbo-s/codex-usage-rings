@@ -115,6 +115,12 @@ final class UsageStore: ObservableObject {
         timer?.tolerance = RefreshPolicy.tolerance(lowPower: lowPower)
     }
 
+    func setAutoHide(enabled: Bool? = nil, delay: Int? = nil) {
+        if let enabled { settings.autoHideEnabled = enabled }
+        if let delay { settings.setAutoHideDelay(delay) }
+        save()
+    }
+
     func update(_ id: String, edit: (inout Profile) -> Void) {
         guard let index = settings.profiles.firstIndex(where: { $0.id == id }) else { return }
         edit(&settings.profiles[index])

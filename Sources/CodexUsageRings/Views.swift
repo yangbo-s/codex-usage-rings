@@ -19,6 +19,9 @@ enum RingStyle {
 struct UsagePanel: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var loginAtLaunch: LoginAtLaunch
+    var onHover: (Bool) -> Void = { _ in }
+    var onEditing: (Bool) -> Void = { _ in }
+    @FocusState private var editingField: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -47,6 +50,9 @@ struct UsagePanel: View {
         .frame(width: 360, height: store.managing ? 560 : panelHeight)
         .background(.regularMaterial)
         .tint(RingStyle.inkGreen)
+        .onHover(perform: onHover)
+        .onChange(of: editingField, perform: onEditing)
+        .onDisappear { editingField = false; onEditing(false) }
     }
 
     private var panelHeight: CGFloat {
@@ -75,7 +81,7 @@ struct UsagePanel: View {
         VStack(spacing: 0) {
             if store.visibleProfiles.isEmpty {
                 VStack(spacing: 12) {
-                    Image(nsImage: RingRenderer.image(RingPresentation(), diameter: 44))
+                    Image(nsImage: RingRenderer.image(RingPresentation(), diameter: 36))
                         .accessibilityHidden(true)
                     Text(store.connecting ? "正在连接本机账户…" : "连接你的第一个账户")
                         .font(.system(size: 14, weight: .semibold))
@@ -101,7 +107,7 @@ struct UsagePanel: View {
         return VStack(spacing: 0) {
             Button { store.selectedID = profile.id } label: {
                 HStack(spacing: 12) {
-                    Image(nsImage: RingRenderer.image(state.rings, stale: state.isStale, diameter: 44, includesResets: false))
+                    Image(nsImage: RingRenderer.image(state.rings, stale: state.isStale, diameter: 36, includesResets: false))
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(profile.name.isEmpty ? "未命名账户" : profile.name)
@@ -132,7 +138,7 @@ struct UsagePanel: View {
                     if let inner = state.rings.inner { windowRow(inner, label: "内环 · \(inner.title)") }
                     HStack(spacing: 6) {
                         Image(systemName: "info.circle")
-                        Text("中心显示\(state.rings.outer?.title ?? "主额度")剩余量；每条竖线代表一次 reset。")
+                        Text("中心数字为\(state.rings.outer?.title ?? "主额度")剩余百分比；每条竖线代表一次 reset。")
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
@@ -178,6 +184,30 @@ struct UsagePanel: View {
 
     private var management: some View {
         VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle("自动收起面板", isOn: Binding(
+                    get: { store.settings.autoHideEnabled },
+                    set: { store.setAutoHide(enabled: $0) }
+                ))
+                .toggleStyle(.switch).font(.system(size: 12))
+                HStack {
+                    Text("鼠标移出后")
+                    Spacer()
+                    TextField("秒数", value: Binding(
+                        get: { store.settings.autoHideDelaySeconds },
+                        set: { store.setAutoHide(delay: $0) }
+                    ), format: .number.grouping(.never))
+                    .textFieldStyle(.roundedBorder).multilineTextAlignment(.trailing)
+                    .frame(width: 48).focused($editingField)
+                    .accessibilityLabel("自动收起延迟，1 到 300 秒")
+                    Text("秒收起")
+                }
+                .font(.system(size: 12)).disabled(!store.settings.autoHideEnabled)
+                Text("可设为 1–300 秒；移回面板或编辑文字时暂停。")
+                    .font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Divider()
             ForEach(store.visibleProfiles) { profile in
                 VStack(spacing: 8) {
                     HStack {
@@ -185,7 +215,7 @@ struct UsagePanel: View {
                             get: { profile.name },
                             set: { value in store.update(profile.id) { $0.name = String(value.prefix(32)) } }
                         ))
-                        .textFieldStyle(.roundedBorder).accessibilityLabel("账户名称")
+                        .textFieldStyle(.roundedBorder).accessibilityLabel("账户名称").focused($editingField)
                         Button("移除") { store.remove(profile) }.font(.system(size: 11)).buttonStyle(.plain)
                     }
                     Text(profile.kind == .local ? "跟随本机 Codex 登录" : "独立登录账户")

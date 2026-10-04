@@ -3,7 +3,7 @@ import Testing
 import UsageCore
 @testable import CodexUsageRings
 
-private func fixture(_ body: String) throws -> (URL, URL) {
+func fixture(_ body: String) throws -> (URL, URL) {
     let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
     try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
     let script = directory.appendingPathComponent("fake-codex")
