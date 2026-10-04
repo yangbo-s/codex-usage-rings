@@ -192,7 +192,7 @@ DMG：`Codex-Usage-Rings-v0.4.2-macos-arm64.dmg`，3,883,942 bytes。SHA-256：`
 - REQ-023 / AC-023 / TC-022：33 项 `swift test` 全部通过（0.956 秒，不含编译）；同期限两个不同 id 保留两行，重复 id 排除，余额上限与未知差额保留。英文日期精确断言涵盖纽约/UTC 时分、跨年、过去/未知/不过期。
 - REQ-024 / AC-024 / TC-023：`.impeccable/review/v4.3/overview-{light,dark}.png` 和 `settings-{light,dark}.png` 共四张由主实现者打开检查；Full reset 行、日期、电源图标可见，“本地时间”及 info 解释已删除，总览基础高 285pt，真实错误与更新时间保留。
 - TC-010：release 构建通过（4.24 秒）；plist、JSON、git diff --check 通过。DMG verify 和只读挂载通过，版本 0.4.3、Applications 链接、4 个 app 文件与源构建哈希及严格签名均通过；临时卷已卸载。
-- TC-011：上传与回下载结果在发布后补充。
+- TC-011：已发布 [v0.4.3 prerelease](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.3)，源码标签为 `77fc1da98d8037b7a3a3443d48ceb823a4c5796a`。GitHub 状态 isDraft=false / isPrerelease=true，DMG 与 SHA256SUMS.txt 回下载校验通过，两个文件均与本地逐字节一致，临时下载目录清理完毕。
 
 DMG：`Codex-Usage-Rings-v0.4.3-macos-arm64.dmg`，3,907,943 bytes；SHA-256：`3322e86443b71c1e3de25552b0e8b03884373934c5881f313dd6306a96bfe8fa`。没有替换已安装的应用，无新增后台请求、计时器或动画。
 
