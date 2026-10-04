@@ -2,4 +2,12 @@
 dist/
 .local/
 .DS_Store
-.impeccable/review/
+
+# Internal working documents stay local; publish user-facing documentation only.
+.impeccable/
+/DESIGN.md
+/PRODUCT.md
+/docs/acceptance.md
+/docs/implementation.md
+/docs/menu-bar.surface.md
+/Resources/Brand/*.prompt.txt

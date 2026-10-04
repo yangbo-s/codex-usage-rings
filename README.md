@@ -6,7 +6,7 @@
 
 把 Codex 剩余额度放进 Mac 顶部菜单栏。一个账户一个彩色圆环，剩余百分比用纯数字显示在环内（省略 %），点击查看额度周期、重置时间和账户设置。
 
-[下载 v0.4.3](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.3) · [使用与验证范围](docs/acceptance.md) · [更新记录](docs/releases/v0.4.3.md)
+[下载 v0.4.3](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.3) · [更新记录](docs/releases/v0.4.3.md) · [MIT License](LICENSE)
 
 ## 安装
 
@@ -27,7 +27,7 @@ Release 同时提供 `SHA256SUMS.txt`。把它与下载的 DMG 放在同一个�
 shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 ```
 
-v0.4.3 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓库为私有时，下载需要有该仓库的访问权限。
+v0.4.3 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。
 
 ## 圆环怎么看
 
@@ -43,7 +43,7 @@ v0.4.3 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓�
 
 每连接一个账户，菜单栏增加一个圆环。入口按内容收紧宽度，最多显示两列 reset 标记。悬停查看准确次数和简要用量；点击圆环即可查看额度窗口与 **Reset 到期时间**，每份 reset 独立一行：左侧加粗 **Full reset**，右侧如 **Expires October 29, 14:44**。日期按系统时区从早到晚排列，跨年时补充年份；同一到期时间也分行显示。无期限显示 No expiry，未知期限显示 Expiry unknown；明细不完整的差额单独汇总为未知。已到期显示 Expired，余额仍以服务端为准。应用没有演示模式。
 
-账户套餐不再只是首字母大写：本次确认的 `pro` 显示 **Pro 200**，`prolite` / `promax` 独立显示 Pro Lite / Pro Max，不把未确认档位推算成同一价位。
+账户套餐 `pro` 显示为 **Pro 200**，`prolite` / `promax` 分别显示为 Pro Lite / Pro Max。
 
 ## 多账户
 
@@ -78,8 +78,6 @@ v0.4.3 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓�
 
 定时器使用 20% 容差，允许系统合并唤醒，因此不承诺精确到秒。多个账户依次查询，读取完成即关闭 app-server；浏览器登录期间才临时保留相应进程，最长 5 分钟。没有持续动画或逐秒倒计时。
 
-v0.2.0 单账户 release 版本在本机短时空闲采样为 0.0% CPU、约 54–57 MiB RSS，未残留查询子进程。这不是长时间续航测试，也不包含每次联网查询的峰值。完整范围见[验收记录](docs/acceptance.md)。
-
 ## 数据与凭据
 
 用量通过本机 `codex app-server` 的 stdio JSON-RPC 获取。优先使用 `rateLimitsByLimitId.codex`，兼容 `rateLimits`；按实际 `windowDurationMins` 识别窗口。Banked reset 数量使用 `rateLimitResetCredits.availableCount`，不根据可能不完整的明细列表推算。到期时间取同一响应的 `credits[].expiresAt`，不会用额度窗口的重置时间代替，无额外网络请求。
@@ -104,7 +102,7 @@ v0.2.0 单账户 release 版本在本机短时空闲采样为 0.0% CPU、约 54�
 
 **自启动没有生效？** 打开面板查看是否显示“等待系统允许”，按提示到 macOS 登录项设置批准，并确认应用没有被移动或删除。
 
-**是否支持 Intel Mac？** 本次预编译包只有 arm64。代码未针对 Intel 验证，也未提供 Universal 包。
+**是否支持 Intel Mac？** 当前预编译包只有 arm64，暂不提供 Intel 或 Universal 包。
 
 ## 从源码构建
 
@@ -118,7 +116,7 @@ bash scripts/build-app.sh
 open "dist/Codex Usage Rings.app" --args --show
 ```
 
-输出位于 `dist/Codex Usage Rings.app`，构建脚本会加入图标并进行 ad-hoc 签名。仓库为私有时，clone 需要对应权限。
+输出位于 `dist/Codex Usage Rings.app`，构建脚本会加入图标并进行 ad-hoc 签名。
 
 开发用环境变量：
 
@@ -147,14 +145,14 @@ swift run CodexUsageRings --probe
 bash scripts/package-release.sh
 ```
 
-修改图标源图后，运行 `bash scripts/build-icon.sh`，再重新构建。原始 PNG、生成提示词和 macOS `.icns` 均保存在 [Resources](Resources)。Logo 使用内置 image_gen 生成。
+修改图标源图后，运行 `bash scripts/build-icon.sh`，再重新构建。原始 PNG 和 macOS `.icns` 均保存在 [Resources](Resources)。Logo 由 AI 生成。
 
-## 验证范围
+## 已知限制
 
-33 项自动测试覆盖额度边界、单双环、reset 数量、配置迁移、目录隔离、分包/超时/退出、查询进程释放、刷新策略、登录启动状态及自动收起的取消、编辑暂停和设置持久化，以及颜色阈值、字形净空和 reset/外环实际像素同宽、两列宽度上限、三点像素、逐条 reset、英文日期/跨年/未知边界及套餐名称。原生浅深色离屏图用于检查绘制与设置页；它们不是系统菜单栏截图。
-
-尚未完成的验证（此前原生 UI 自动化连接超时）：自动收起的桌面鼠标路径与动画观感、多账户真实 OAuth 全流程、实际菜单点击与辅助功能、重启后的登录启动、低电量及睡眠唤醒的系统实测、长时间电池耗电、跨 macOS 版本兼容。无自动更新。
-
-[实现说明](docs/implementation.md) · [设计记录](DESIGN.md) · [验收与评分](docs/acceptance.md)
+当前为预览版，仅提供 Apple Silicon 安装包，尚未经过 Developer ID 签名与 Apple 公证，也不支持自动更新。多账户登录、系统登录启动、辅助功能及不同 macOS 版本的兼容性仍需完善；实际耗电随账户数量和使用情况变化。
 
 参考：[Codex App Server](https://learn.chatgpt.com/docs/app-server)、[认证与凭据存储](https://learn.chatgpt.com/docs/auth)、[SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice)。
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE)，允许使用、修改、分发和商用；分发时须保留版权与许可声明。
