@@ -84,10 +84,14 @@ GOAL-002：将当前源代码、完整安装说明和可下载 macOS 包交付�
 | --- | --- | --- |
 | REQ-009 / AC-009 | README、docs/releases/v0.2.0.md | 安装、依赖、架构、真实功能、已知限制、构建命令准确；无伪造演示数据 |
 | REQ-010 / AC-010 | 当前 main 初始提交与远程推送 | 暂存内容审核通过；本地提交与 origin/main SHA 一致，无强推 |
-| REQ-011 / AC-011 | scripts/package-release.sh、GitHub prerelease | ZIP 可解压、签名有效、arm64/min macOS 正确；上传后下载的哈希与本地一致 |
+| REQ-011 / AC-011 | scripts/package-release.sh、GitHub prerelease | DMG 可挂载、签名有效、arm64/min macOS 正确；上传后下载的哈希与本地一致 |
 
-IN-003：当前 release `.app` 和 CFBundleShortVersionString。OUT-003：`Codex-Usage-Rings-v<version>-macos-<architecture>.zip` 与 `SHA256SUMS.txt`。应用必须已构建、版本和架构可读、签名有效；不包含账户配置、凭据、测试临时目录或 Swift 缓存。ZIP 保留顶层 `.app`。
+IN-003：当前 release `.app` 和 CFBundleShortVersionString。OUT-003：`Codex-Usage-Rings-v<version>-macos-<architecture>.dmg` 与 `SHA256SUMS.txt`；已发布 ZIP 保留为备选，不重打包。应用必须已构建、版本和架构可读、签名有效；不包含账户配置、凭据、测试临时目录或 Swift 缓存。DMG 根目录包含 `.app` 与指向 `/Applications` 的符号链接，支持拖拽安装。
 
-ADR-004：使用 GitHub Release ZIP 附件与 SHA-256 清单，不把二进制构建产物提交到源码仓库；现有包尚未公证且部分系统流程待验，因此发布为 prerelease。此次不变更刷新行为、不增加自动更新，也不更改仓库可见性。
+ADR-004：使用 GitHub Release DMG 附件与 SHA-256 清单，不把二进制构建产物提交到源码仓库；现有包尚未公证且部分系统流程待验，因此发布为 prerelease。此次不变更刷新行为、不增加自动更新，也不更改仓库可见性。
 
 TC-010：在发布前运行现有测试、构建及包完整性检查；TC-011：检查 GitHub 标签/提交、附件列表及下载后的 SHA-256。发布证据补充到验收记录。
+
+REQ-012 / AC-012：用户选择 DMG 分发。新 DMG 使用既有 v0.2.0 应用，不更新或移动旧标签；README 和 Release 改用 DMG 作为首选下载。挂载时能读取完整 app、Applications 链接正确，代码签名有效；原 ZIP 附件保留。
+
+TC-012：hdiutil verify、只读挂载、Applications 链接检查、应用文件哈希与已发布 ZIP 对比、签名校验、卸载、GitHub 上传回下载哈希。仅修改包装与文档，不重跑无关 Swift 业务测试；不在测试过程中覆盖 /Applications 的现有应用。

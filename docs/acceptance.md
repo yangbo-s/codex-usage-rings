@@ -100,3 +100,18 @@ REQ-010 / AC-010：代码与 README 已推送至 `yangbo-s/codex-usage-rings` �
 REQ-011 / AC-011 / TC-011：[GitHub Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.2.0) 已发布，`isDraft=false`、`isPrerelease=true`；ZIP 和 SHA256SUMS.txt 均为 uploaded。GitHub 返回的 ZIP SHA-256 与上方值一致。从 GitHub 回下载两个附件后，校验清单通过，且两个文件与本地原件逐字节一致。临时解包/下载目录已清理。
 
 仓库保持 private，发布为 prerelease，不扩大已有系统流程和续航验证范围。REQ-009/010/011 发布交付项均通过；整体产品证据评分仍为 88/100，待验证的实际系统行为仍按上文保留。
+
+## DMG 分发补充
+
+REQ-012 / AC-012 / TC-012：用户选择 DMG 后，`package-release.sh` 改为生成 HFS+ / UDZO 只读映像。根目录只有两个可见入口：`Codex Usage Rings.app` 和指向 `/Applications` 的 `Applications` 符号链接；另含隐藏的卷图标与禁止 Spotlight 索引标记。
+
+- `hdiutil verify`：映像校验通过。
+- 只读挂载：成功；Applications 链接目标与两个可见入口检查通过。
+- 映像内应用严格代码签名校验通过；全部 4 个应用文件的哈希与已发布 ZIP 内对应文件一致。
+- 完整校验清单（DMG + ZIP）检查通过；仅下载 DMG 时，README 中 `--ignore-missing` 校验命令也通过。
+- DMG 已补充到原 v0.2.0 prerelease；原 ZIP 字节及标签保持不变。Release 安装说明改为 DMG，SHA256SUMS.txt 同时涵盖两个附件。
+- 从 GitHub 回下载 DMG 与新清单，SHA-256 通过，两个文件与本地逐字节一致。临时挂载与下载目录均已清理。
+
+DMG 大小：3,561,605 bytes。SHA-256：`d4a944843a37deb3e20b63ef4f7cffa49865d847874577328e16b9c6da4dd034`。
+
+本次仅改包装脚本与文档，未修改或重编译应用，沿用发布前通过的 20 项业务测试；没有再次执行无关测试。未实际拖拽覆盖 /Applications 中的应用，也未检查 Finder 窗口中图标的具体位置。当前系统对 hdiutil 发出了弃用提示，但命令成功；脚本保留该工具以兼容项目最低 macOS 13。产品证据评分仍为 88/100，DMG 包装与上传验证项通过，既有实际系统流程与长期耗电限制不变。

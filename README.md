@@ -12,8 +12,8 @@
 
 当前预编译包适用于 **Apple Silicon（M 系列芯片）和 macOS 13 或更高版本**。使用安装包无需安装 Swift 或 Xcode。
 
-1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.2.0) 下载 `Codex-Usage-Rings-v0.2.0-macos-arm64.zip`。
-2. 解压，将 `Codex Usage Rings.app` 拖入“应用程序”文件夹，再双击打开。
+1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.2.0) 下载 `Codex-Usage-Rings-v0.2.0-macos-arm64.dmg`。
+2. 双击 DMG，将里面的 `Codex Usage Rings.app` 拖到 `Applications` 文件夹入口。复制完成后推出磁盘映像，再从“应用程序”打开。
 3. 先确保本机已安装 Codex CLI 或 Codex / ChatGPT 桌面应用，并使用 **ChatGPT 账户**登录。此工具复用本机 Codex 获取订阅用量；API Key 登录不提供这种额度。
 4. 首次启动会尝试连接本机已有登录。成功后，菜单栏出现一个真实账户圆环；未连接时显示一个灰色入口，点击即可连接。
 
@@ -21,13 +21,13 @@
 
 **当前是预览版，采用 ad-hoc 签名，尚未经过 Developer ID 签名与 Apple 公证。** 首次打开可能被 macOS 拦截。确认下载来源及校验值后，可按 [Apple 的说明](https://support.apple.com/zh-cn/102445)，在尝试打开应用后前往“系统设置 → 隐私与安全性 → 仍要打开”。
 
-Release 同时提供 `SHA256SUMS.txt`。把它与 ZIP 放在同一个目录，然后执行：
+Release 同时提供 `SHA256SUMS.txt`。把它与下载的 DMG 放在同一个目录，然后执行：
 
 ```sh
-shasum -a 256 -c SHA256SUMS.txt
+shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 ```
 
-仓库为私有时，下载需要有该仓库的访问权限。
+同一 Release 保留了先前的 ZIP 作为备选；校验命令会跳过未下载的格式。仓库为私有时，下载需要有该仓库的访问权限。
 
 ## 圆环怎么看
 
@@ -132,7 +132,7 @@ CODEX_CLI_PATH="/absolute/path/to/codex" \
 swift run CodexUsageRings --probe
 ```
 
-打包当前构建的应用与校验文件：
+把当前构建的应用打成带 Applications 拖拽入口的 DMG，并生成校验文件：
 
 ```sh
 bash scripts/package-release.sh

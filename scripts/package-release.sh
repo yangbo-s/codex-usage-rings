@@ -18,7 +18,30 @@ codesign --verify --strict --verbose=2 "$app"
 
 destination="dist/releases/v$version"
 mkdir -p "$destination"
-archive="Codex-Usage-Rings-v$version-macos-$architecture.zip"
-/usr/bin/ditto -c -k --sequesterRsrc --keepParent "$app" "$destination/$archive"
-(cd "$destination" && /usr/bin/shasum -a 256 "$archive" > SHA256SUMS.txt)
-printf '%s\n' "$destination/$archive" "$destination/SHA256SUMS.txt"
+basename="Codex-Usage-Rings-v$version-macos-$architecture"
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+mkdir -p "$work/image"
+/usr/bin/ditto "$app" "$work/image/Codex Usage Rings.app"
+ln -s /Applications "$work/image/Applications"
+cp Resources/AppIcon.icns "$work/image/.VolumeIcon.icns"
+touch "$work/image/.metadata_never_index"
+if command -v SetFile >/dev/null; then
+    SetFile -a C "$work/image"
+fi
+
+# hdiutil is available on the project's minimum supported macOS 13.
+# Create away from the final path so a failure cannot replace a valid package.
+/usr/bin/hdiutil create -volname "Codex Usage Rings" -srcfolder "$work/image" \
+    -fs HFS+ -format UDZO -nospotlight "$work/$basename.dmg"
+/usr/bin/hdiutil verify "$work/$basename.dmg"
+mv "$work/$basename.dmg" "$destination/$basename.dmg"
+(
+    cd "$destination"
+    /usr/bin/shasum -a 256 "$basename.dmg" > SHA256SUMS.txt
+    # Keep the checksum for the previously published ZIP, without repacking it.
+    if [[ -f "$basename.zip" ]]; then
+        /usr/bin/shasum -a 256 "$basename.zip" >> SHA256SUMS.txt
+    fi
+)
+printf '%s\n' "$destination/$basename.dmg" "$destination/SHA256SUMS.txt"
