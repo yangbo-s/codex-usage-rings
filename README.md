@@ -6,13 +6,13 @@
 
 把 Codex 剩余额度放进 Mac 顶部菜单栏。一个账户一个彩色圆环，剩余百分比用纯数字显示在环内（省略 %），点击查看额度周期、重置时间和账户设置。
 
-[下载 v0.4.1](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.1) · [使用与验证范围](docs/acceptance.md) · [更新记录](docs/releases/v0.4.1.md)
+[下载 v0.4.2](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.2) · [使用与验证范围](docs/acceptance.md) · [更新记录](docs/releases/v0.4.2.md)
 
 ## 安装
 
 当前预编译包适用于 **Apple Silicon（M 系列芯片）和 macOS 13 或更高版本**。使用安装包无需安装 Swift 或 Xcode。
 
-1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.1) 下载 `Codex-Usage-Rings-v0.4.1-macos-arm64.dmg`。
+1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.2) 下载 `Codex-Usage-Rings-v0.4.2-macos-arm64.dmg`。
 2. 双击 DMG，将里面的 `Codex Usage Rings.app` 拖到 `Applications` 文件夹入口。复制完成后推出磁盘映像，再从“应用程序”打开。
 3. 先确保本机已安装 Codex CLI 或 Codex / ChatGPT 桌面应用，并使用 **ChatGPT 账户**登录。此工具复用本机 Codex 获取订阅用量；API Key 登录不提供这种额度。
 4. 首次启动会尝试连接本机已有登录。成功后，菜单栏出现一个真实账户圆环；未连接时显示一个灰色入口，点击即可连接。
@@ -27,7 +27,7 @@ Release 同时提供 `SHA256SUMS.txt`。把它与下载的 DMG 放在同一个�
 shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 ```
 
-v0.4.1 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓库为私有时，下载需要有该仓库的访问权限。
+v0.4.2 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓库为私有时，下载需要有该仓库的访问权限。
 
 ## 圆环怎么看
 
@@ -37,11 +37,13 @@ v0.4.1 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓�
 | 绿 / 蓝 / 黄 / 红 | 按显示整数：75–100 / 50–74 / 25–49 / 0–24；内外环分别取色 |
 | 较厚单环 | 只有一个额度窗口，包括只有 5 小时额度的情况 |
 | 外环 + 内环 | 同时有长周期与 5 小时额度：外环显示长周期，内环显示 5 小时 |
-| 右侧绿色竖线 | 每一条表示一个可用 banked reset；与外环同宽，独立保持绿色；工具只读取，不兑换 |
+| 右侧绿色标记 | 1 次一根线，2 次两根线，3 次及以上为一根线＋竖向三点；与外环同宽，独立保持绿色；工具只读取，不兑换 |
 | `—` | 当前额度未知，保留灰色；0% 则显示淡红色空轨道 |
 | 灰色弧线和过期提示 | 同步失败时保留的上一次快照 |
 
-每连接一个账户，菜单栏增加一个圆环。悬停查看简要用量；点击圆环展开两个窗口的具体百分比与重置时间。应用没有演示模式。
+每连接一个账户，菜单栏增加一个圆环。入口按内容收紧宽度，最多显示两列 reset 标记。悬停查看准确次数和简要用量；点击圆环即可查看额度窗口与 **Reset 到期时间**，按本地时间从早到晚排列，同一到期时间合并次数。接口明确没有期限时显示“不过期”；未提供或明细不完整时显示“到期时间未知”。到期后仍按服务端次数显示，日期提示“已到期，待同步”。应用没有演示模式。
+
+账户套餐不再只是首字母大写：本次确认的 `pro` 显示 **Pro 200**，`prolite` / `promax` 独立显示 Pro Lite / Pro Max，不把未确认档位推算成同一价位。
 
 ## 多账户
 
@@ -80,7 +82,7 @@ v0.2.0 单账户 release 版本在本机短时空闲采样为 0.0% CPU、约 54�
 
 ## 数据与凭据
 
-用量通过本机 `codex app-server` 的 stdio JSON-RPC 获取。优先使用 `rateLimitsByLimitId.codex`，兼容 `rateLimits`；按实际 `windowDurationMins` 识别窗口。Banked reset 数量使用 `rateLimitResetCredits.availableCount`，不根据可能不完整的明细列表推算。
+用量通过本机 `codex app-server` 的 stdio JSON-RPC 获取。优先使用 `rateLimitsByLimitId.codex`，兼容 `rateLimits`；按实际 `windowDurationMins` 识别窗口。Banked reset 数量使用 `rateLimitResetCredits.availableCount`，不根据可能不完整的明细列表推算。到期时间取同一响应的 `credits[].expiresAt`，不会用额度窗口的重置时间代替，无额外网络请求。
 
 应用自身不解析或打印登录令牌，不创建对话、不发起模型调用。数据保存在：
 
@@ -149,7 +151,7 @@ bash scripts/package-release.sh
 
 ## 验证范围
 
-27 项自动测试覆盖额度边界、单双环、reset 数量、配置迁移、目录隔离、分包/超时/退出、查询进程释放、刷新策略、登录启动状态及自动收起的取消、编辑暂停和设置持久化，以及颜色阈值、字形净空和 reset/外环实际像素同宽。原生浅深色离屏图用于检查绘制与设置页；它们不是系统菜单栏截图。
+32 项自动测试覆盖额度边界、单双环、reset 数量、配置迁移、目录隔离、分包/超时/退出、查询进程释放、刷新策略、登录启动状态及自动收起的取消、编辑暂停和设置持久化，以及颜色阈值、字形净空和 reset/外环实际像素同宽、两列宽度上限、三点像素、到期分组/未知边界及套餐名称。原生浅深色离屏图用于检查绘制与设置页；它们不是系统菜单栏截图。
 
 尚未完成的验证（此前原生 UI 自动化连接超时）：自动收起的桌面鼠标路径与动画观感、多账户真实 OAuth 全流程、实际菜单点击与辅助功能、重启后的登录启动、低电量及睡眠唤醒的系统实测、长时间电池耗电、跨 macOS 版本兼容。无自动更新。
 

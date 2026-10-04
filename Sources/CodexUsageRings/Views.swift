@@ -55,7 +55,11 @@ struct UsagePanel: View {
     }
 
     private var panelHeight: CGFloat {
-        store.visibleProfiles.isEmpty ? 330 : min(560, 335 + CGFloat(store.visibleProfiles.count - 1) * 80)
+        guard !store.visibleProfiles.isEmpty else { return 330 }
+        let selected = store.selectedID.flatMap { store.states[$0] }
+        let groups = selected?.usage?.resetExpirationGroups.count ?? 0
+        let resetHeight: CGFloat = groups > 0 ? 30 + CGFloat(min(4, groups)) * 22 : 0
+        return min(560, 335 + CGFloat(store.visibleProfiles.count - 1) * 80 + resetHeight)
     }
 
     private var header: some View {
@@ -111,7 +115,7 @@ struct UsagePanel: View {
                     VStack(alignment: .leading, spacing: 5) {
                         Text(profile.name.isEmpty ? "未命名账户" : profile.name)
                             .font(.system(size: 13, weight: .semibold)).lineLimit(1)
-                        Text(state.isStale ? "数据已过期" : (state.plan?.capitalized ?? "等待同步"))
+                        Text(state.planSubtitle)
                             .font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
                     }
                     Spacer(minLength: 6)
@@ -124,7 +128,7 @@ struct UsagePanel: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(profile.name)，剩余 \(state.rings.percentage)，查看详情")
+            .accessibilityLabel("\(profile.name)，\(state.planName ?? "套餐未知")，剩余 \(state.rings.percentage)，Banked reset \(state.usage?.bankedResetCount.map { "\($0) 次" } ?? "未知")，查看详情")
             .padding(.horizontal, 20).padding(.vertical, 16)
 
             if selected {
@@ -135,9 +139,12 @@ struct UsagePanel: View {
                         Text("暂无用量数据").font(.system(size: 12)).foregroundStyle(RingStyle.secondaryText)
                     }
                     if let inner = state.rings.inner { windowRow(inner, label: "内环 · \(inner.title)", stale: state.isStale) }
+                    if let usage = state.usage, !usage.resetExpirationGroups.isEmpty {
+                        resetDetails(usage)
+                    }
                     HStack(spacing: 6) {
                         Image(systemName: "info.circle")
-                        Text("中心数字为\(state.rings.outer?.title ?? "主额度")剩余百分比；每条竖线代表一次 reset。")
+                        Text("中心数字为\(state.rings.outer?.title ?? "主额度")剩余百分比；竖向三点表示 3 次及以上 reset。")
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
@@ -154,6 +161,28 @@ struct UsagePanel: View {
             }
         }
         .background(selected ? Color.primary.opacity(0.025) : .clear)
+    }
+
+    private func resetDetails(_ usage: AccountUsage) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Reset 到期时间").font(.system(size: 11, weight: .medium))
+                Spacer()
+                Text("本地时间").font(.system(size: 10)).foregroundStyle(RingStyle.secondaryText)
+            }
+            ForEach(usage.resetExpirationGroups) { group in
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    Text("\(group.count) 次").monospacedDigit().fixedSize()
+                    Spacer(minLength: 0)
+                    Text(group.expiration.description())
+                        .foregroundStyle(RingStyle.secondaryText)
+                        .multilineTextAlignment(.trailing)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .font(.system(size: 11))
+                .accessibilityElement(children: .combine)
+            }
+        }
     }
 
     private func windowRow(_ window: UsageWindow, label: String, stale: Bool) -> some View {

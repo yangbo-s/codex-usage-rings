@@ -7,6 +7,27 @@ import UsageCore
 enum RingRenderer {
     nonisolated static let menuDiameter: CGFloat = 18
 
+    struct ResetLayout {
+        let columns: Int
+        let hasOverflow: Bool
+        let firstX: CGFloat
+        let pitch: CGFloat
+        let imageWidth: CGFloat
+    }
+
+    static func resetLayout(_ rings: RingPresentation, diameter: CGFloat = menuDiameter,
+                            includesResets: Bool = true) -> ResetLayout {
+        let count = includesResets ? max(0, rings.bankedResetCount ?? 0) : 0
+        let columns = min(2, count)
+        let scale = diameter / menuDiameter
+        let firstX = diameter + 2.5 * scale
+        let pitch = 3.5 * scale
+        let edge = outerStrokeWidth(nested: rings.isNested, diameter: diameter) / 2 + 0.5 * scale
+        let width = columns == 0 ? diameter : firstX + CGFloat(columns - 1) * pitch + edge
+        return ResetLayout(columns: columns, hasOverflow: count >= 3,
+                           firstX: firstX, pitch: pitch, imageWidth: width)
+    }
+
     static func outerStrokeWidth(nested: Bool, diameter: CGFloat = menuDiameter) -> CGFloat {
         (nested ? 1.15 : 2) * diameter / menuDiameter
     }
@@ -19,10 +40,9 @@ enum RingRenderer {
     // The text parameter lets render tests compare labels without adding an application mode.
     static func render(_ rings: RingPresentation, stale: Bool, diameter: CGFloat,
                        includesResets: Bool, label text: String) -> NSImage {
-        let count = includesResets ? max(0, rings.bankedResetCount ?? 0) : 0
         let scale = diameter / menuDiameter
-        let extra = count > 0 ? 3 + CGFloat(count) * 3 : 0
-        let size = NSSize(width: diameter + extra * scale, height: diameter)
+        let layout = resetLayout(rings, diameter: diameter, includesResets: includesResets)
+        let size = NSSize(width: layout.imageWidth, height: diameter)
         let image = NSImage(size: size, flipped: false) { _ in
             let center = NSPoint(x: diameter / 2, y: diameter / 2)
             let outerWidth = outerStrokeWidth(nested: rings.isNested, diameter: diameter)
@@ -47,15 +67,23 @@ enum RingRenderer {
                 context.restoreGState()
             }
 
-            // Each available reset is one line; do not infer count from the detail rows.
-            for index in 0..<count {
-                let x = diameter + (3.5 + CGFloat(index) * 3) * scale
+            let resetColor = stale ? NSColor.secondaryLabelColor : UsagePalette.green
+            for index in 0..<layout.columns {
+                let x = layout.firstX + CGFloat(index) * layout.pitch
+                if index == 1 && layout.hasOverflow {
+                    resetColor.setFill()
+                    for y in [CGFloat(4), 9, 14] {
+                        NSBezierPath(ovalIn: NSRect(x: x - outerWidth / 2, y: y * scale - outerWidth / 2,
+                                                   width: outerWidth, height: outerWidth)).fill()
+                    }
+                    continue
+                }
                 let line = NSBezierPath()
                 line.move(to: NSPoint(x: x, y: 4 * scale))
                 line.line(to: NSPoint(x: x, y: diameter - 4 * scale))
                 line.lineWidth = outerWidth
                 line.lineCapStyle = .round
-                (stale ? NSColor.secondaryLabelColor : UsagePalette.green).setStroke()
+                resetColor.setStroke()
                 line.stroke()
             }
             return true

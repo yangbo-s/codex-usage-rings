@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-04T00:33:52.841072Z",
+  "generatedAt": "2026-10-04T00:48:52.335181+00:00",
   "title": "Design System: Usage Rings",
   "extensions": {
     "colorMeta": {
@@ -111,26 +111,27 @@
         "nestedInnerRadius": "6.2pt × scale",
         "outerRadius": "diameter / 2 - outerWidth / 2 - 0.6pt × scale",
         "resetStrokeWidth": "Exactly outerStrokeWidth(nested:diameter:), shared with the current outer ring",
-        "resetFirstX": "diameter + 3.5pt × scale",
-        "resetPitch": "3pt × scale",
+        "resetFirstX": "diameter + 2.5pt × scale",
+        "resetPitch": "3.5pt × scale",
         "resetVerticalInset": "4pt × scale",
-        "resetCanvasExtra": "(3 + count × 3)pt × scale when count > 0",
+        "resetCanvasExtra": "Last column center + outerStrokeWidth / 2 + 0.5pt × scale; at most two columns",
         "imageIsTemplate": false,
         "numberFit": "Start at typography.ring-number × scale; use CoreText glyph-path bounds and shrink by 0.05pt × scale until their diagonal fits 2 × holeRadius - 0.6pt × scale, with a 4pt × scale loop bound. Center using the glyph bounds so 100 is as large as possible within this clearance.",
         "centerContent": "Rounded outer remaining number without %; unknown is —. Detail rows, tooltips and accessibility labels retain percentage semantics. Full appears only in a renderer test comparison, never as an application mode.",
-        "resetPathHeight": "10pt × scale"
+        "resetPathHeight": "10pt × scale",
+        "resetOverflow": "3+ available resets: first column solid, second column three dots at y=4/9/14pt × scale; dot diameter equals outer stroke"
       },
       "layout": {
         "source": "Sources/CodexUsageRings/Views.swift; Sources/CodexUsageRings/Application.swift",
-        "overviewHeight": "330pt if empty; otherwise min(560, 335 + (accountCount - 1) × 80)pt",
-        "statusItemWidth": "rendered image width + 6pt",
+        "overviewHeight": "330pt if empty; otherwise min(560, 335 + (accountCount - 1) × 80 + (groups > 0 ? 30 + min(4, groups) × 22 : 0))pt",
+        "statusItemWidth": "rendered image width; no extra 6pt. Single ring: 18pt / 22pt / 25.5pt for 0 / 1 / 2+ resets. System spacing remains controlled by macOS.",
         "panelAccountResets": "includesResets: false; count displayed as adjacent text"
       },
       "components": [
         {
           "name": "Account ring",
           "source": "Sources/CodexUsageRings/RingRenderer.swift",
-          "behavior": "Outer long window + inner 5-hour window when both exist; thicker single ring otherwise. Each window uses its own rounded remaining-color band. Center shows outer remaining number without %. Each reset is an adjacent green stroke exactly matching the outer stroke width; stale resets are gray."
+          "behavior": "Outer long window + inner 5-hour window when both exist; thicker single ring otherwise. Center numeric, remaining-color bands unchanged. Reset: 1 solid, 2 solid, or 1 solid + 3 dots for 3+; at most two columns, green (gray if stale), same width as outer stroke."
         },
         {
           "name": "Account row",
@@ -140,7 +141,7 @@
             "NSImage via RingRenderer",
             "Color.primary.opacity(0.025) when selected"
           ],
-          "behavior": "Select account to reveal actual window rows; reset count appears on the right."
+          "behavior": "Select account to reveal windows and grouped reset expiry times in local timezone. Exact count remains on the right; pro is shown as user-confirmed Pro 200, other tiers independently named."
         },
         {
           "name": "Connection buttons",
@@ -240,7 +241,17 @@
         "revisionBasis": "User screenshots and additional requests led to the 18pt core, four independent remaining-color bands, reset/outer stroke equality and a maximized numeric 100 that clears the ring.",
         "desktopAttempt": "The earlier CUA attempt timed out; no new desktop CUA attempt ran in v4. Offscreen renders do not certify desktop interaction.",
         "inspection": "All eight v4 renders were opened and inspected by the parent and independent reviewer; static/source review found no material fixes.",
-        "powerMeasurement": "No new energy measurement in v4; long-duration battery consumption remains unverified."
+        "powerMeasurement": "No new energy measurement in v4; long-duration battery consumption remains unverified.",
+        "v4_2": {
+          "files": [
+            ".impeccable/review/v4.2/rings-light.png",
+            ".impeccable/review/v4.2/rings-dark.png",
+            ".impeccable/review/v4.2/overview-light.png",
+            ".impeccable/review/v4.2/overview-dark.png"
+          ],
+          "tests": "32 tests passed; additional client-to-store expiry/plan assertions passed in a targeted rerun.",
+          "inspection": "Primary implementer inspected these four native offscreen captures. No desktop width or interaction evidence; previous independent review applies to v4 only."
+        }
       },
       "previewPolicy": "No HTML/CSS facsimiles or synthetic tonal ramps: native controls and dynamic system colors remain authoritative. Native components and offscreen evidence are recorded here; the web snippet array is intentionally empty.",
       "autoHide": {
@@ -278,7 +289,7 @@
     "keyCharacteristics": [
       "一账户一入口：两种额度使用外长内短的同心环，单窗口使用较厚单环。",
       "中心数字显示外环剩余额度且不带 `%`；内外环各自按显示整数选择绿、蓝、黄、红，详情条保持一致。",
-      "右侧每条绿色竖线代表一次可用 banked reset，线宽与当前外环相同。",
+      "1 次 reset 一根线、2 次两根线、3 次及以上一根线加竖向三点；线宽与点径等于外环描边。",
       "系统材质、系统字体和原生表单控件支持明暗外观。",
       "面板支持可配置的鼠标移出自动收起；原生展开收起遵循减少动态效果，无持续动画。"
     ],
@@ -296,7 +307,7 @@
     ],
     "dos": [
       "**Do** 保持一账户一入口，按真实窗口使用外长内短双环或较厚单环。",
-      "**Do** 让中心数字与外环一致，省略环内 `%`，并逐条显示实际可用 reset。",
+      "**Do** 让中心数字与外环一致，省略环内 `%`，并用两列封顶标记概括 reset，详情显示准确次数和到期时间。",
       "**Do** 让内外环与各自详情条共享四段余量规则，reset 保持绿色且与外环同宽。",
       "**Do** 用文字绿承载小字号绿色文字，并在明暗外观检查可读性。",
       "**Do** 保留系统控件、键盘焦点和辅助标签，让 macOS 管理原生反馈。",

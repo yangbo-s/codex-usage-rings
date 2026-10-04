@@ -14,6 +14,11 @@ struct UsageRingsMain {
                     let account = try await client.account()
                     let usage = try await client.usage()
                     print("accountType=\(account.type) plan=\(account.planType ?? "unknown") primaryRemaining=\(usage.limits.primary?.percentage ?? "unknown") secondaryRemaining=\(usage.limits.secondary?.percentage ?? "unknown") primaryMinutes=\(usage.limits.primary?.windowDurationMins.map(String.init) ?? "unknown") secondaryMinutes=\(usage.limits.secondary?.windowDurationMins.map(String.init) ?? "unknown") bankedResets=\(usage.bankedResetCount.map(String.init) ?? "unknown")")
+                    let timed = usage.resetExpirationGroups.reduce(0) { count, group in
+                        if case .at = group.expiration { return count + group.count }
+                        return count
+                    }
+                    print("resetExpiryKnown=\(timed) nonExpiring=\(usage.resetExpirationGroups.first(where: { $0.expiration == .never })?.count ?? 0) expiryUnknown=\(usage.resetExpirationGroups.first(where: { $0.expiration == .unknown })?.count ?? 0)")
                     client.stop()
                     exit(0)
                 } catch {
@@ -108,7 +113,7 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
                 button.image = RingRenderer.image(RingPresentation())
                 button.toolTip = "Usage Rings · 点击连接账户"
             }
-            items[id]?.length = (button.image?.size.width ?? RingRenderer.menuDiameter) + 6
+            items[id]?.length = button.image?.size.width ?? RingRenderer.menuDiameter
             button.imageScaling = .scaleProportionallyDown
             button.setAccessibilityLabel(button.toolTip)
         }

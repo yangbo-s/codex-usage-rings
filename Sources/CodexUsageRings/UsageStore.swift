@@ -12,6 +12,11 @@ struct AccountState {
 
     var snapshot: RateSnapshot? { usage?.limits }
     var rings: RingPresentation { usage?.rings ?? RingPresentation() }
+    var planName: String? { PlanDisplay.name(plan ?? snapshot?.planType) }
+    var planSubtitle: String {
+        let parts = [planName, isStale ? "数据已过期" : nil].compactMap { $0 }
+        return parts.isEmpty ? "等待同步" : parts.joined(separator: " · ")
+    }
 
     var isStale: Bool {
         let interval = RefreshPolicy.interval(lowPower: ProcessInfo.processInfo.isLowPowerModeEnabled)

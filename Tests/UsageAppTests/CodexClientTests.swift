@@ -116,7 +116,10 @@ func fixture(_ body: String) throws -> (URL, URL) {
         if r['method'] == 'account/read':
             result = {'account': {'type': 'chatgpt', 'email': str(os.getpid()), 'planType': 'pro'}}
         if r['method'] == 'account/rateLimits/read':
-            result = {'rateLimits': {'primary': {'usedPercent': 12, 'windowDurationMins': 10080}}, 'rateLimitResetCredits': {'availableCount': 2}}
+            result = {'rateLimits': {'primary': {'usedPercent': 12, 'windowDurationMins': 10080}}, 'rateLimitResetCredits': {'availableCount': 2, 'credits': [
+                {'id': 'expiring', 'status': 'available', 'expiresAt': 1800000000},
+                {'id': 'non-expiring', 'status': 'available', 'expiresAt': None}
+            ]}}
         print(json.dumps({'id': r['id'], 'result': result}), flush=True)
     """)
     defer { try? FileManager.default.removeItem(at: directory) }
@@ -129,6 +132,9 @@ func fixture(_ body: String) throws -> (URL, URL) {
     let state = try #require(store.states[profile.id])
     #expect(state.rings.percentage == "88%")
     #expect(state.usage?.bankedResetCount == 2)
+    #expect(state.planName == "Pro 200")
+    #expect(state.usage?.resetExpirationGroups.map(\.expiration) == [.at(Date(timeIntervalSince1970: 1800000000)), .never])
+    #expect(state.usage?.resetExpirationGroups.map(\.count) == [1, 1])
     let pidString = try #require(state.email)
     let pid = try #require(Int32(pidString))
     for _ in 0..<20 {

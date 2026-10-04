@@ -34,7 +34,7 @@ import UsageCore
     }
 }
 
-@Test @MainActor func ringGeometryFitsNumbersAndCountsEveryReset() async throws {
+@Test @MainActor func ringGeometryFitsNumbersAndCapsResetMarkers() async throws {
     _ = NSApplication.shared
     func window(_ used: Double, _ minutes: Int) -> UsageWindow {
         UsageWindow(usedPercent: used, windowDurationMins: minutes, resetsAt: nil)
@@ -52,8 +52,7 @@ import UsageCore
     ]
     for (_, rings) in variants {
         let image = RingRenderer.image(rings)
-        let expected = CGFloat((rings.bankedResetCount ?? 0) > 0 ? 3 + (rings.bankedResetCount ?? 0) * 3 : 0)
-        #expect(image.size.width == 18 + expected)
+        #expect(image.size.width <= 25.5)
         #expect(image.size.height == 18)
         let hole: CGFloat = rings.isNested ? 6.2 - 0.525 : 9 - 2 - 0.6
         #expect(!rings.number.contains("%"))
@@ -72,7 +71,11 @@ import UsageCore
         if r['method'] == 'account/read':
             result = {'account': {'type': 'chatgpt', 'planType': 'pro'}}
         if r['method'] == 'account/rateLimits/read':
-            result = {'rateLimits': {'primary': {'usedPercent': 57, 'windowDurationMins': 10080, 'resetsAt': time.time() + 540000}}, 'rateLimitResetCredits': {'availableCount': 1}}
+            result = {'rateLimits': {'primary': {'usedPercent': 57, 'windowDurationMins': 10080, 'resetsAt': time.time() + 540000}}, 'rateLimitResetCredits': {'availableCount': 4, 'credits': [
+                {'id': 'a', 'status': 'available', 'expiresAt': 1800000000},
+                {'id': 'b', 'status': 'available', 'expiresAt': 1800000000},
+                {'id': 'c', 'status': 'available', 'expiresAt': None}
+            ]}}
         print(json.dumps({'id': r['id'], 'result': result}), flush=True)
     """)
     defer { try? FileManager.default.removeItem(at: fixtureDirectory) }
@@ -124,7 +127,7 @@ import UsageCore
         }
         try save(comparison, to: directory.appendingPathComponent("full-comparison-\(name).png"))
         store.managing = false
-        try savePanel(store, height: 335, appearance: appearance, to: directory.appendingPathComponent("overview-\(name).png"))
+        try savePanel(store, height: 431, appearance: appearance, to: directory.appendingPathComponent("overview-\(name).png"))
         store.managing = true
         try savePanel(store, height: 560, appearance: appearance, to: directory.appendingPathComponent("settings-\(name).png"))
     }
@@ -149,4 +152,46 @@ import UsageCore
     let bitmap = try #require(NSBitmapImageRep(data: tiff))
     let png = try #require(bitmap.representation(using: .png, properties: [:]))
     try png.write(to: url)
+}
+
+@Test @MainActor func resetMarkersGrowToTwoColumnsAndRenderThreeOverflowDots() throws {
+    _ = NSApplication.shared
+    for appearanceName in [NSAppearance.Name.aqua, .darkAqua] {
+        let appearance = try #require(NSAppearance(named: appearanceName))
+        for nested in [false, true] {
+            let outer = UsageWindow(usedPercent: 50, windowDurationMins: 10080, resetsAt: nil)
+            let inner = UsageWindow(usedPercent: 75, windowDurationMins: 300, resetsAt: nil)
+            var previousWidth: CGFloat = 0
+            for count in [0, 1, 2, 3, Int.max] {
+                let rings = RingPresentation(outer: outer, inner: nested ? inner : nil, bankedResetCount: count)
+                let small = RingRenderer.image(rings)
+                #expect(small.size.width <= 25.5)
+                if count <= 2 { #expect(small.size.width > previousWidth) }
+                else { #expect(small.size.width == previousWidth) }
+                previousWidth = small.size.width
+                #expect(RingRenderer.image(rings, includesResets: false).size.width == 18)
+                guard count > 0 else { continue }
+                let layout = RingRenderer.resetLayout(rings, diameter: 180)
+                let rendered = RingRenderer.image(rings, diameter: 180)
+                var tiff: Data?
+                appearance.performAsCurrentDrawingAppearance { tiff = rendered.tiffRepresentation }
+                let data = try #require(tiff)
+                let bitmap = try #require(NSBitmapImageRep(data: data))
+                let factor = CGFloat(bitmap.pixelsWide) / rendered.size.width
+                for column in 0..<min(2, count) {
+                    let x = Int(((layout.firstX + CGFloat(column) * layout.pitch) * factor).rounded())
+                    var runs = 0
+                    var wasGreen = false
+                    for y in 0..<bitmap.pixelsHigh {
+                        let pixel = try #require(bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB))
+                        let green = pixel.alphaComponent > 0.5 && pixel.greenComponent > pixel.redComponent * 1.4
+                        if green && !wasGreen { runs += 1 }
+                        wasGreen = green
+                    }
+                    #expect(runs == (count >= 3 && column == 1 ? 3 : 1))
+                }
+            }
+        }
+    }
+    #expect(RingRenderer.image(RingPresentation()).size.width == 18)
 }

@@ -61,6 +61,16 @@ public struct RateResponse: Decodable {
 
     public struct ResetCredits: Decodable {
         public var availableCount: Int?
+        public var credits: [ResetCredit]?
+
+        private enum CodingKeys: String, CodingKey { case availableCount, credits }
+
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            availableCount = try container.decodeIfPresent(Int.self, forKey: .availableCount)
+            // Optional details must not make an otherwise valid quota unreadable.
+            credits = try? container.decodeIfPresent([ResetCredit].self, forKey: .credits)
+        }
     }
 
     public var codex: RateSnapshot? {
@@ -70,18 +80,21 @@ public struct RateResponse: Decodable {
     }
 
     public var usage: AccountUsage? {
-        codex.map { AccountUsage(limits: $0, bankedResetCount: rateLimitResetCredits?.availableCount) }
+        codex.map { AccountUsage(limits: $0, bankedResetCount: rateLimitResetCredits?.availableCount,
+                                resetCredits: rateLimitResetCredits?.credits) }
     }
 }
 
 public struct AccountUsage: Equatable {
     public var limits: RateSnapshot
     public var bankedResetCount: Int?
+    public var resetCredits: [ResetCredit]?
 
-    public init(limits: RateSnapshot, bankedResetCount: Int?) {
+    public init(limits: RateSnapshot, bankedResetCount: Int?, resetCredits: [ResetCredit]? = nil) {
         self.limits = limits
         // A missing or malformed count is unknown, never an invented zero.
         self.bankedResetCount = bankedResetCount.flatMap { $0 >= 0 ? $0 : nil }
+        self.resetCredits = resetCredits
     }
 
     public var rings: RingPresentation {
