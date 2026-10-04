@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-04T00:48:52.335181+00:00",
+  "generatedAt": "2026-10-04T01:50:24.648466+00:00",
   "title": "Design System: Usage Rings",
   "extensions": {
     "colorMeta": {
@@ -123,7 +123,7 @@
       },
       "layout": {
         "source": "Sources/CodexUsageRings/Views.swift; Sources/CodexUsageRings/Application.swift",
-        "overviewHeight": "330pt if empty; otherwise min(560, 335 + (accountCount - 1) × 80 + (groups > 0 ? 30 + min(4, groups) × 22 : 0))pt",
+        "overviewHeight": "330pt if empty; otherwise min(560, 285 + (accountCount - 1) × 80 + (rows > 0 ? 30 + min(4, rows) × 22 : 0))pt",
         "statusItemWidth": "rendered image width; no extra 6pt. Single ring: 18pt / 22pt / 25.5pt for 0 / 1 / 2+ resets. System spacing remains controlled by macOS.",
         "panelAccountResets": "includesResets: false; count displayed as adjacent text"
       },
@@ -141,7 +141,7 @@
             "NSImage via RingRenderer",
             "Color.primary.opacity(0.025) when selected"
           ],
-          "behavior": "Select account to reveal windows and grouped reset expiry times in local timezone. Exact count remains on the right; pro is shown as user-confirmed Pro 200, other tiers independently named."
+          "behavior": "Select account to reveal windows and individual reset rows. Bold Full reset left; Expires October 29, 14:44 right, local timezone, year added across years. Same expiry remains separate. No local-time label or info paragraph. Missing detail balance is summarized as unknown. Pro 200 and exact reset count retained."
         },
         {
           "name": "Connection buttons",
@@ -193,10 +193,11 @@
           "source": "Sources/CodexUsageRings/Views.swift",
           "nativeStyles": [
             "Button .plain",
-            "12pt system font",
+            "SF Symbols power, 14pt medium, 24pt hit area",
+            "Hover: Color.red; normal: Color.primary",
             "Command-Q shortcut"
           ],
-          "behavior": "Footer directly shows 退出 on overview and settings. One click terminates the application; there is no submenu."
+          "behavior": "Direct quit icon on overview/settings. Hover turns red and resets on exit/disappearance. Tooltip/accessibility label retained. No submenu or animation."
         }
       ],
       "energy": {
@@ -251,6 +252,16 @@
           ],
           "tests": "32 tests passed; additional client-to-store expiry/plan assertions passed in a targeted rerun.",
           "inspection": "Primary implementer inspected these four native offscreen captures. No desktop width or interaction evidence; previous independent review applies to v4 only."
+        },
+        "v4_3": {
+          "files": [
+            ".impeccable/review/v4.3/overview-light.png",
+            ".impeccable/review/v4.3/overview-dark.png",
+            ".impeccable/review/v4.3/settings-light.png",
+            ".impeccable/review/v4.3/settings-dark.png"
+          ],
+          "tests": "33 tests passed; release build passed.",
+          "inspection": "Primary implementer inspected these four native offscreen captures: individual date rows, power icon and compact layout visible. Hover wiring reviewed in source; actual desktop pointer path unverified."
         }
       },
       "previewPolicy": "No HTML/CSS facsimiles or synthetic tonal ramps: native controls and dynamic system colors remain authoritative. Native components and offscreen evidence are recorded here; the web snippet array is intentionally empty.",

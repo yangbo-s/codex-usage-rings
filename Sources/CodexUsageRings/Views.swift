@@ -57,9 +57,10 @@ struct UsagePanel: View {
     private var panelHeight: CGFloat {
         guard !store.visibleProfiles.isEmpty else { return 330 }
         let selected = store.selectedID.flatMap { store.states[$0] }
-        let groups = selected?.usage?.resetExpirationGroups.count ?? 0
-        let resetHeight: CGFloat = groups > 0 ? 30 + CGFloat(min(4, groups)) * 22 : 0
-        return min(560, 335 + CGFloat(store.visibleProfiles.count - 1) * 80 + resetHeight)
+        let usage = selected?.usage
+        let rows = (usage?.availableResetCredits.count ?? 0) + ((usage?.unlistedResetCount ?? 0) > 0 ? 1 : 0)
+        let resetHeight: CGFloat = rows > 0 ? 30 + CGFloat(min(4, rows)) * 22 : 0
+        return min(560, 285 + CGFloat(store.visibleProfiles.count - 1) * 80 + resetHeight)
     }
 
     private var header: some View {
@@ -139,15 +140,9 @@ struct UsagePanel: View {
                         Text("暂无用量数据").font(.system(size: 12)).foregroundStyle(RingStyle.secondaryText)
                     }
                     if let inner = state.rings.inner { windowRow(inner, label: "内环 · \(inner.title)", stale: state.isStale) }
-                    if let usage = state.usage, !usage.resetExpirationGroups.isEmpty {
+                    if let usage = state.usage, (usage.bankedResetCount ?? 0) > 0 {
                         resetDetails(usage)
                     }
-                    HStack(spacing: 6) {
-                        Image(systemName: "info.circle")
-                        Text("中心数字为\(state.rings.outer?.title ?? "主额度")剩余百分比；竖向三点表示 3 次及以上 reset。")
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                    .font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
                     if let error = state.error {
                         Text(error).font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
                             .fixedSize(horizontal: false, vertical: true)
@@ -165,24 +160,27 @@ struct UsagePanel: View {
 
     private func resetDetails(_ usage: AccountUsage) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Reset 到期时间").font(.system(size: 11, weight: .medium))
-                Spacer()
-                Text("本地时间").font(.system(size: 10)).foregroundStyle(RingStyle.secondaryText)
+            Text("Reset 到期时间").font(.system(size: 11, weight: .medium))
+            ForEach(usage.availableResetCredits, id: \.id) { credit in
+                resetRow(title: "Full reset", expiration: credit.expiration)
             }
-            ForEach(usage.resetExpirationGroups) { group in
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    Text("\(group.count) 次").monospacedDigit().fixedSize()
-                    Spacer(minLength: 0)
-                    Text(group.expiration.description())
-                        .foregroundStyle(RingStyle.secondaryText)
-                        .multilineTextAlignment(.trailing)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .font(.system(size: 11))
-                .accessibilityElement(children: .combine)
+            if let missing = usage.unlistedResetCount, missing > 0 {
+                resetRow(title: missing == 1 ? "Full reset" : "Full reset × \(missing)", expiration: .unknown)
             }
         }
+    }
+
+    private func resetRow(title: String, expiration: ResetExpiration) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(title).fontWeight(.semibold).fixedSize()
+            Spacer(minLength: 0)
+            Text(expiration.description())
+                .foregroundStyle(RingStyle.secondaryText)
+                .multilineTextAlignment(.trailing)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.system(size: 11))
+        .accessibilityElement(children: .combine)
     }
 
     private func windowRow(_ window: UsageWindow, label: String, stale: Bool) -> some View {
@@ -315,11 +313,27 @@ struct UsagePanel: View {
             Spacer()
             Button { store.managing.toggle(); loginAtLaunch.refresh() } label: { Image(systemName: "slider.horizontal.3") }
                 .buttonStyle(.plain).help("账户与设置").accessibilityLabel("账户与设置")
-            Button("退出") { NSApplication.shared.terminate(nil) }
-                .font(.system(size: 12)).buttonStyle(.plain)
-                .keyboardShortcut("q").help("退出 Usage Rings（⌘Q）")
-                .accessibilityLabel("退出 Usage Rings")
+            QuitButton()
         }
         .padding(.horizontal, 20).padding(.vertical, 14)
+    }
+}
+
+private struct QuitButton: View {
+    @State private var hovering = false
+
+    var body: some View {
+        Button { NSApplication.shared.terminate(nil) } label: {
+            Image(systemName: "power")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(hovering ? Color.red : Color.primary)
+                .frame(width: 24, height: 24)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .onDisappear { hovering = false }
+        .keyboardShortcut("q").help("退出 Usage Rings（⌘Q）")
+        .accessibilityLabel("退出 Usage Rings")
     }
 }

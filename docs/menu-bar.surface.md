@@ -18,3 +18,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 ## v0.4.2 修订
 
 宽度等于实际图像宽，移除额外 6pt。reset 为 1 根、2 根或 1 根加竖向三点，最多两列；面板直接显示准确次数及按本地时间排序的到期分组。未知期限与不过期分开表达。pro 显示用户确认的 Pro 200，底栏直接退出。当前新增证据为 `.impeccable/review/v4.2/` 的原生离屏图及 32 项自动测试；主实现者完成静态检查，不把之前独立审查结论延伸到本次改动。没有网页 detector 或新的耗电测量。
+
+## v0.4.3 修订
+
+底栏电源图标直接退出，悬停红色。Reset 到期时间下逐条展示加粗 Full reset 和英文 Expires October 29, 14:44；删除本地时间标签与 info 解释，不隐藏真实错误。采用既有原生控件、颜色和字体，总览高度同步收紧，不修改顶栏几何和刷新节奏。

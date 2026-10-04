@@ -185,3 +185,15 @@ DMG：`Codex-Usage-Rings-v0.4.2-macos-arm64.dmg`，3,883,942 bytes。SHA-256：`
 本次证据评分维持 **88/100**：需求 23/25、正确性 22/25、测试 16/20、架构 9/10、代码与安全 9/10、文档交付 9/10。新功能自动与静态验证通过，但实际菜单栏宽度、鼠标/键盘交互、跨 macOS、真实多账户 OAuth、重启登录和长期耗电等此前缺项仍未验证；不把历史 v4 独立审查的 ship 结论延伸为本次独立审查。
 
 发布补充：`main` 与 `v0.4.2` 应用源码提交为 `f31310cfe9f8f75540771f3a137aeae49dc2aa74`；[GitHub Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.2) 为 `isDraft=false`、`isPrerelease=true`，附件恰为 DMG 与 SHA256SUMS.txt。回下载校验通过，临时下载目录清理完毕；本补充仅记录交付证据，不重编译或变更标签。仓库可见性保持原状。
+
+## v0.4.3 精简面板
+
+- REQ-022 / AC-022 / TC-023：退出替换为 power，hover 系统红色、移出恢复；源码已核对 onHover/onDisappear、直接退出、⌘Q 和辅助名称。浅深色总览与设置页的图标静态呈现已检查；真实桌面 hover/点击未取证。
+- REQ-023 / AC-023 / TC-022：33 项 `swift test` 全部通过（0.956 秒，不含编译）；同期限两个不同 id 保留两行，重复 id 排除，余额上限与未知差额保留。英文日期精确断言涵盖纽约/UTC 时分、跨年、过去/未知/不过期。
+- REQ-024 / AC-024 / TC-023：`.impeccable/review/v4.3/overview-{light,dark}.png` 和 `settings-{light,dark}.png` 共四张由主实现者打开检查；Full reset 行、日期、电源图标可见，“本地时间”及 info 解释已删除，总览基础高 285pt，真实错误与更新时间保留。
+- TC-010：release 构建通过（4.24 秒）；plist、JSON、git diff --check 通过。DMG verify 和只读挂载通过，版本 0.4.3、Applications 链接、4 个 app 文件与源构建哈希及严格签名均通过；临时卷已卸载。
+- TC-011：上传与回下载结果在发布后补充。
+
+DMG：`Codex-Usage-Rings-v0.4.3-macos-arm64.dmg`，3,907,943 bytes；SHA-256：`3322e86443b71c1e3de25552b0e8b03884373934c5881f313dd6306a96bfe8fa`。没有替换已安装的应用，无新增后台请求、计时器或动画。
+
+没有测试失败。证据评分维持 **88/100**（需求23/25、正确性22/25、测试16/20、架构9/10、代码与安全9/10、文档交付9/10）。新增逻辑与静态呈现通过，实际 hover 路径、系统事件、真实多账户及长期耗电等未测项仍开放；没有重新进行独立代理审查或电量测量。

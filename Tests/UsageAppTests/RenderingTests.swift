@@ -72,8 +72,8 @@ import UsageCore
             result = {'account': {'type': 'chatgpt', 'planType': 'pro'}}
         if r['method'] == 'account/rateLimits/read':
             result = {'rateLimits': {'primary': {'usedPercent': 57, 'windowDurationMins': 10080, 'resetsAt': time.time() + 540000}}, 'rateLimitResetCredits': {'availableCount': 4, 'credits': [
-                {'id': 'a', 'status': 'available', 'expiresAt': 1800000000},
-                {'id': 'b', 'status': 'available', 'expiresAt': 1800000000},
+                {'id': 'a', 'status': 'available', 'expiresAt': 1793299440},
+                {'id': 'b', 'status': 'available', 'expiresAt': 1793385840},
                 {'id': 'c', 'status': 'available', 'expiresAt': None}
             ]}}
         print(json.dumps({'id': r['id'], 'result': result}), flush=True)
@@ -127,7 +127,7 @@ import UsageCore
         }
         try save(comparison, to: directory.appendingPathComponent("full-comparison-\(name).png"))
         store.managing = false
-        try savePanel(store, height: 431, appearance: appearance, to: directory.appendingPathComponent("overview-\(name).png"))
+        try savePanel(store, height: 403, appearance: appearance, to: directory.appendingPathComponent("overview-\(name).png"))
         store.managing = true
         try savePanel(store, height: 560, appearance: appearance, to: directory.appendingPathComponent("settings-\(name).png"))
     }

@@ -49,16 +49,36 @@ private func usage(_ summary: String) throws -> AccountUsage {
 }
 
 @Test func resetExpirationUsesLocalCalendarAndDistinguishesPastNeverUnknown() throws {
-    let date = Date(timeIntervalSince1970: 1800000000)
+    let date = Date(timeIntervalSince1970: 1793299440)
     let utc = try #require(TimeZone(secondsFromGMT: 0))
     let newYork = try #require(TimeZone(identifier: "America/New_York"))
     let expiration = ResetExpiration.at(date)
     let before = date.addingTimeInterval(-1)
-    #expect(expiration.description(now: before, timeZone: utc) != expiration.description(now: before, timeZone: newYork))
-    #expect(expiration.description(now: date, timeZone: utc).contains("已到期，待同步"))
-    #expect(!expiration.description(now: before, timeZone: utc).contains("已到期"))
-    #expect(ResetExpiration.never.description() == "不过期")
-    #expect(ResetExpiration.unknown.description() == "到期时间未知")
+    #expect(expiration.description(now: before, timeZone: newYork) == "Expires October 29, 14:44")
+    #expect(expiration.description(now: before, timeZone: utc) == "Expires October 29, 18:44")
+    #expect(expiration.description(now: date, timeZone: newYork) == "Expired October 29, 14:44")
+    let previousYear = date.addingTimeInterval(-366 * 86400)
+    #expect(expiration.description(now: previousYear, timeZone: newYork) == "Expires October 29, 2026, 14:44")
+    #expect(ResetExpiration.never.description() == "No expiry")
+    #expect(ResetExpiration.unknown.description() == "Expiry unknown")
+}
+
+@Test func resetRowsKeepEachCreditEvenWhenExpirationMatches() throws {
+    let value = try usage(#"""
+    {"availableCount":4,"credits":[
+        {"id":"b","status":"available","expiresAt":1793299440},
+        {"id":"a","status":"available","expiresAt":1793299440},
+        {"id":"a","status":"available","expiresAt":1793299440},
+        {"id":"past","status":"redeemed","expiresAt":1790000000}
+    ]}
+    """#)
+    #expect(value.availableResetCredits.map(\.id) == ["a", "b"])
+    #expect(value.availableResetCredits.map(\.expiration) == [.at(Date(timeIntervalSince1970: 1793299440)), .at(Date(timeIntervalSince1970: 1793299440))])
+    #expect(value.unlistedResetCount == 2)
+    #expect(try usage("{\"availableCount\":0}").availableResetCredits.isEmpty)
+    #expect(try usage("{\"availableCount\":null}").unlistedResetCount == nil)
+    #expect(try usage("{\"availableCount\":\(Int.max)}").availableResetCredits.isEmpty)
+    #expect(try usage("{\"availableCount\":\(Int.max)}").unlistedResetCount == Int.max)
 }
 
 @Test func planNamesKeepTiersDistinct() {
