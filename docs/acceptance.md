@@ -15,6 +15,7 @@
 - 同为系统半粗体、等宽数字 8pt 时，NSString 文字布局框：100 为 16.36 × 10pt，Full 为 14.88 × 10pt。生产排版改用 CoreText 实际字形轮廓净空，在圆内保留至少 0.3pt 的径向间隙（随直径缩放）。两个数字表达的可读性和语义一致性优先，应用不引入 Full 切换设置。
 - release 构建成功（3.29 秒），arm64、版本 0.4.0/build 4；Info.plist 检查通过。DMG 完整性、只读挂载、Applications 链接、全部 4 个应用文件哈希及严格代码签名验证通过；测试挂载已卸载清理。
 - DMG 为 `Codex-Usage-Rings-v0.4.0-macos-arm64.dmg`，3,735,438 bytes；SHA-256：`28dbec26329587d9081e8a6da58925d5e79699e65bf7cdb103aa24931260489e`。
+- 源码与文档已推送，`v0.4.0` 标签指向 `12c3eca4205c32f20eb0496069456b9ffe23ceab`；[Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.0) 为已发布 prerelease，DMG 和清单均为 uploaded。两个附件回下载的 SHA-256 及逐字节比较通过，临时下载目录已清理；旧版本标签及附件保持不变。
 
 没有再次执行此前连续超时的原生 CUA；本轮不声称真实菜单栏像素、hover/focus、VoiceOver、系统事件或能耗已现场验证。没有执行秒级轮询，也没有据查询次数计算耗电百分比；当前刷新仍为 300/900 秒。旧版短时空闲样本不充当 v0.4.0 或可调刷新方案的能耗证据。
 
