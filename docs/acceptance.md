@@ -176,10 +176,12 @@ DMG 大小：3,561,605 bytes。SHA-256：`d4a944843a37deb3e20b63ef4f7cffa49865d8
 | REQ-020,021 / TC-020 | 通过：CodexClient → UsageStore 的 plan=pro、两种到期明细与读取后进程退出断言；本机真实只读 probe 返回 1 次 reset，1 次期限已知，无邮箱/令牌/credit id 输出 |
 | REQ-019,020,021 / TC-021 | 主实现者检查 `.impeccable/review/v4.2/` 中 rings 与 overview 的浅深色图：Pro 200、次数/日期、三点和退出按钮可见，无截断；不是系统菜单栏或实际点击证据 |
 | REQ-005,011 / TC-010 | release 构建与 DMG 制作通过；hdiutil verify、只读挂载、版本 0.4.2、Applications 链接、全部 4 个 app 文件哈希、严格签名通过；临时卷已卸载 |
-| REQ-010,011 / TC-011 | 发布与回下载结果待下方补充 |
+| REQ-010,011 / TC-011 | 已发布 v0.4.2 prerelease；回下载 DMG 与 SHA256SUMS.txt，校验通过且两文件与本地逐字节相同 |
 
 完整 `swift test` 32 项通过（1.010 秒，不含编译）。随后补充联调断言时遇到测试模块不能访问模型的 internal 初始化器；改为核对公开输出字段，不扩大生产 API，定向测试通过（0.197 秒）。release 构建通过（3.92 秒）；plist、JSON 与 git diff --check 通过。
 
 DMG：`Codex-Usage-Rings-v0.4.2-macos-arm64.dmg`，3,883,942 bytes。SHA-256：`7fd89a1190c45b6a256a490b53a3433d16185d8ea171956de324e7d1c0b0055b`。没有覆盖 /Applications 中的已安装应用。
 
 本次证据评分维持 **88/100**：需求 23/25、正确性 22/25、测试 16/20、架构 9/10、代码与安全 9/10、文档交付 9/10。新功能自动与静态验证通过，但实际菜单栏宽度、鼠标/键盘交互、跨 macOS、真实多账户 OAuth、重启登录和长期耗电等此前缺项仍未验证；不把历史 v4 独立审查的 ship 结论延伸为本次独立审查。
+
+发布补充：`main` 与 `v0.4.2` 应用源码提交为 `f31310cfe9f8f75540771f3a137aeae49dc2aa74`；[GitHub Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.2) 为 `isDraft=false`、`isPrerelease=true`，附件恰为 DMG 与 SHA256SUMS.txt。回下载校验通过，临时下载目录清理完毕；本补充仅记录交付证据，不重编译或变更标签。仓库可见性保持原状。
