@@ -286,10 +286,10 @@ struct UsagePanel: View {
             Spacer()
             Button { store.managing.toggle(); loginAtLaunch.refresh() } label: { Image(systemName: "slider.horizontal.3") }
                 .buttonStyle(.plain).help("账户与设置").accessibilityLabel("账户与设置")
-            Menu {
-                Button("退出 Usage Rings") { NSApplication.shared.terminate(nil) }.keyboardShortcut("q")
-            } label: { Image(systemName: "ellipsis.circle") }
-                .menuStyle(.borderlessButton).menuIndicator(.hidden).frame(width: 18).accessibilityLabel("更多选项")
+            Button("退出") { NSApplication.shared.terminate(nil) }
+                .font(.system(size: 12)).buttonStyle(.plain)
+                .keyboardShortcut("q").help("退出 Usage Rings（⌘Q）")
+                .accessibilityLabel("退出 Usage Rings")
         }
         .padding(.horizontal, 20).padding(.vertical, 14)
     }

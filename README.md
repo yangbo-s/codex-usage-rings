@@ -6,18 +6,18 @@
 
 把 Codex 剩余额度放进 Mac 顶部菜单栏。一个账户一个彩色圆环，剩余百分比用纯数字显示在环内（省略 %），点击查看额度周期、重置时间和账户设置。
 
-[下载 v0.4.0](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.0) · [使用与验证范围](docs/acceptance.md) · [更新记录](docs/releases/v0.4.0.md)
+[下载 v0.4.1](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.1) · [使用与验证范围](docs/acceptance.md) · [更新记录](docs/releases/v0.4.1.md)
 
 ## 安装
 
 当前预编译包适用于 **Apple Silicon（M 系列芯片）和 macOS 13 或更高版本**。使用安装包无需安装 Swift 或 Xcode。
 
-1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.0) 下载 `Codex-Usage-Rings-v0.4.0-macos-arm64.dmg`。
+1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.1) 下载 `Codex-Usage-Rings-v0.4.1-macos-arm64.dmg`。
 2. 双击 DMG，将里面的 `Codex Usage Rings.app` 拖到 `Applications` 文件夹入口。复制完成后推出磁盘映像，再从“应用程序”打开。
 3. 先确保本机已安装 Codex CLI 或 Codex / ChatGPT 桌面应用，并使用 **ChatGPT 账户**登录。此工具复用本机 Codex 获取订阅用量；API Key 登录不提供这种额度。
 4. 首次启动会尝试连接本机已有登录。成功后，菜单栏出现一个真实账户圆环；未连接时显示一个灰色入口，点击即可连接。
 
-应用只在菜单栏运行，没有 Dock 图标。退出入口位于面板右下角的更多菜单。
+应用只在菜单栏运行，没有 Dock 图标。点击面板右下角“退出”即可直接关闭应用，也可使用 ⌘Q。
 
 **当前是预览版，采用 ad-hoc 签名，尚未经过 Developer ID 签名与 Apple 公证。** 首次打开可能被 macOS 拦截。确认下载来源及校验值后，可按 [Apple 的说明](https://support.apple.com/zh-cn/102445)，在尝试打开应用后前往“系统设置 → 隐私与安全性 → 仍要打开”。
 
@@ -27,7 +27,7 @@ Release 同时提供 `SHA256SUMS.txt`。把它与下载的 DMG 放在同一个�
 shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 ```
 
-v0.4.0 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓库为私有时，下载需要有该仓库的访问权限。
+v0.4.1 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。仓库为私有时，下载需要有该仓库的访问权限。
 
 ## 圆环怎么看
 

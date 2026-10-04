@@ -186,6 +186,16 @@
             "accessibilityElement(children: .combine)"
           ],
           "behavior": "Named actual windows, remaining percentages, reset times and used percentages; no window selector. Remaining fills share the same rounded-value adaptive palette and stale treatment as the rings."
+        },
+        {
+          "name": "Quit button",
+          "source": "Sources/CodexUsageRings/Views.swift",
+          "nativeStyles": [
+            "Button .plain",
+            "12pt system font",
+            "Command-Q shortcut"
+          ],
+          "behavior": "Footer directly shows 退出 on overview and settings. One click terminates the application; there is no submenu."
         }
       ],
       "energy": {
