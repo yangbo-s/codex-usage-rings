@@ -6,15 +6,13 @@
 
 把 Codex 剩余额度放进 Mac 顶部菜单栏。可选择显示哪些账户圆环及其顺序，环内显示剩余数字（省略 %）或额度耗尽后的 `C`，点击查看额度周期、Credit 余额、重置时间和账户设置。
 
-[下载 v0.4.3](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.3) · [更新记录](docs/releases/v0.4.3.md) · [MIT License](LICENSE)
-
-当前源码为 **v0.5.0（尚未发布）**，新增 Credit 余额与菜单栏圆环数量、排序设置，见 [更新说明](docs/releases/v0.5.0.md)。上方下载链接仍为已发布的 v0.4.3；以下新增行为需要从当前源码构建。
+[下载 v0.5.0](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.5.0) · [更新记录](docs/releases/v0.5.0.md) · [MIT License](LICENSE)
 
 ## 安装
 
 当前预编译包适用于 **Apple Silicon（M 系列芯片）和 macOS 13 或更高版本**。使用安装包无需安装 Swift 或 Xcode。
 
-1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.4.3) 下载 `Codex-Usage-Rings-v0.4.3-macos-arm64.dmg`。
+1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.5.0) 下载 `Codex-Usage-Rings-v0.5.0-macos-arm64.dmg`。
 2. 双击 DMG，将里面的 `Codex Usage Rings.app` 拖到 `Applications` 文件夹入口。复制完成后推出磁盘映像，再从“应用程序”打开。
 3. 先确保本机已安装 Codex CLI 或 Codex / ChatGPT 桌面应用，并使用 **ChatGPT 账户**登录。此工具复用本机 Codex 获取订阅用量；API Key 登录不提供这种额度。
 4. 首次启动会尝试连接本机已有登录。成功后，菜单栏出现一个真实账户圆环；未连接时显示一个灰色入口，点击即可连接。
@@ -29,7 +27,7 @@ Release 同时提供 `SHA256SUMS.txt`。把它与下载的 DMG 放在同一个�
 shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 ```
 
-v0.4.3 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。
+v0.5.0 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。
 
 ## 圆环怎么看
 
