@@ -154,6 +154,88 @@ import UsageCore
     try png.write(to: url)
 }
 
+@Test @MainActor func creditFallbackRendersRedAndMenuSettingsKeepAllAccounts() async throws {
+    _ = NSApplication.shared
+    let credits = CreditBalance(hasCredits: true, balance: "12345.6789")
+    let rings = AccountUsage(limits: RateSnapshot(
+        primary: UsageWindow(usedPercent: 100, windowDurationMins: 10080, resetsAt: nil),
+        secondary: nil, credits: credits), bankedResetCount: 0).rings
+    #expect(rings.number == "C")
+    for name in [NSAppearance.Name.aqua, .darkAqua] {
+        let appearance = try #require(NSAppearance(named: name))
+        for usesCredits in [false, true] {
+            var variant = rings
+            variant.usesCredits = usesCredits
+            var tiff: Data?
+            appearance.performAsCurrentDrawingAppearance {
+                tiff = RingRenderer.image(variant, diameter: 180).tiffRepresentation
+            }
+            let data = try #require(tiff)
+            let bitmap = try #require(NSBitmapImageRep(data: data))
+            var redLabelPixels = 0
+            for x in (bitmap.pixelsWide * 3 / 10)..<(bitmap.pixelsWide * 7 / 10) {
+                for y in (bitmap.pixelsHigh * 3 / 10)..<(bitmap.pixelsHigh * 7 / 10) {
+                    let pixel = try #require(bitmap.colorAt(x: x, y: y)?.usingColorSpace(.deviceRGB))
+                    if pixel.alphaComponent > 0.5 && pixel.redComponent > pixel.greenComponent * 1.5 {
+                        redLabelPixels += 1
+                    }
+                }
+            }
+            #expect(redLabelPixels > 100)
+        }
+    }
+
+    let (directory, executable) = try fixture("""
+    for line in sys.stdin:
+        r = json.loads(line)
+        if 'id' not in r: continue
+        result = {}
+        if r['method'] == 'account/read': result = {'account': {'type': 'chatgpt', 'planType': 'pro'}}
+        if r['method'] == 'account/rateLimits/read':
+            profile = os.path.basename(os.environ.get('CODEX_HOME', ''))
+            used = 100 if profile in ['a', 'empty'] else 34
+            result = {'rateLimits': {'primary': {'usedPercent': used, 'windowDurationMins': 10080, 'resetsAt': time.time() + 540000}, 'credits': {'hasCredits': profile != 'empty', 'unlimited': False, 'balance': '0' if profile == 'empty' else '12345.6789'}}, 'rateLimitResetCredits': {'availableCount': 0}}
+        print(json.dumps({'id': r['id'], 'result': result}), flush=True)
+    """)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let profiles = [Profile(id: "a", name: "个人账户", kind: .managed),
+                    Profile(id: "b", name: "工作账户", kind: .managed),
+                    Profile(id: "c", name: "备用账户", kind: .managed)]
+    let settingsFile = directory.appendingPathComponent("settings.json")
+    try JSONEncoder().encode(Settings(profiles: [profiles[0]])).write(to: settingsFile)
+    let single = UsageStore(dataDirectory: directory, clientFactory: { CodexClient(home: $0, executable: executable) })
+    await single.refreshAll()
+    defer { single.stop() }
+    #expect(single.states["a"]?.rings.number == "C")
+    try JSONEncoder().encode(Settings(profiles: profiles, menuBarRingLimit: 2)).write(to: settingsFile)
+    let multiple = UsageStore(dataDirectory: directory, clientFactory: { CodexClient(home: $0, executable: executable) })
+    await multiple.refreshAll()
+    defer { multiple.stop() }
+    #expect(multiple.menuBarProfiles.map(\.id) == ["a", "b"])
+    #expect(multiple.states["c"]?.rings.number == "66") // Hidden accounts still refresh.
+    try JSONEncoder().encode(Settings(profiles: [Profile(id: "empty", name: "额度已用完", kind: .managed)]))
+        .write(to: settingsFile)
+    let empty = UsageStore(dataDirectory: directory, clientFactory: { CodexClient(home: $0, executable: executable) })
+    await empty.refreshAll()
+    defer { empty.stop() }
+    #expect(empty.states["empty"]?.rings.number == "0")
+    guard let output = ProcessInfo.processInfo.environment["USAGE_RINGS_SNAPSHOT_DIR"] else { return }
+    let destination = URL(fileURLWithPath: output)
+    try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+    for (label, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+        single.managing = false
+        try savePanel(single, height: 342, appearance: appearance, to: destination.appendingPathComponent("credit-overview-\(label).png"))
+        try savePanel(empty, height: 317, appearance: appearance, to: destination.appendingPathComponent("zero-overview-\(label).png"))
+        single.managing = true
+        try savePanel(single, height: 560, appearance: appearance, to: destination.appendingPathComponent("single-settings-\(label).png"))
+        multiple.managing = true
+        try savePanel(multiple, height: 560, appearance: appearance, to: destination.appendingPathComponent("multiple-settings-\(label).png"))
+        multiple.managing = false
+        multiple.selectedID = "b"
+        try savePanel(multiple, height: 477, appearance: appearance, to: destination.appendingPathComponent("balance-overview-\(label).png"))
+    }
+}
+
 @Test @MainActor func resetMarkersGrowToTwoColumnsAndRenderThreeOverflowDots() throws {
     _ = NSApplication.shared
     for appearanceName in [NSAppearance.Name.aqua, .darkAqua] {

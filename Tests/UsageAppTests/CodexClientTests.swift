@@ -116,7 +116,7 @@ func fixture(_ body: String) throws -> (URL, URL) {
         if r['method'] == 'account/read':
             result = {'account': {'type': 'chatgpt', 'email': str(os.getpid()), 'planType': 'pro'}}
         if r['method'] == 'account/rateLimits/read':
-            result = {'rateLimits': {'primary': {'usedPercent': 12, 'windowDurationMins': 10080}}, 'rateLimitResetCredits': {'availableCount': 2, 'credits': [
+            result = {'rateLimits': {'primary': {'usedPercent': 12, 'windowDurationMins': 10080}, 'credits': {'hasCredits': True, 'unlimited': False, 'balance': '123.456'}}, 'rateLimitResetCredits': {'availableCount': 2, 'credits': [
                 {'id': 'expiring', 'status': 'available', 'expiresAt': 1800000000},
                 {'id': 'non-expiring', 'status': 'available', 'expiresAt': None}
             ]}}
@@ -131,6 +131,8 @@ func fixture(_ body: String) throws -> (URL, URL) {
     let profile = try #require(store.visibleProfiles.first)
     let state = try #require(store.states[profile.id])
     #expect(state.rings.percentage == "88%")
+    #expect(state.usage?.limits.credits?.balance == "123.456")
+    #expect(!state.rings.usesCredits)
     #expect(state.usage?.bankedResetCount == 2)
     #expect(state.planName == "Pro 200")
     #expect(state.usage?.resetExpirationGroups.map(\.expiration) == [.at(Date(timeIntervalSince1970: 1800000000)), .never])
@@ -144,4 +146,26 @@ func fixture(_ body: String) throws -> (URL, URL) {
     #expect(kill(pid, 0) != 0)
     #expect(!store.isRefreshing)
     store.stop()
+}
+
+@Test @MainActor func menuBarPreferencesPersistWithoutHidingPanelAccounts() throws {
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let profiles = ["a", "b", "c"].map { Profile(id: $0, name: $0, kind: .managed) }
+    try JSONEncoder().encode(Settings(profiles: profiles)).write(to: directory.appendingPathComponent("settings.json"))
+    let store = UsageStore(dataDirectory: directory)
+    store.setMenuBarRingLimit(2)
+    store.moveProfile("c", by: -1)
+    store.moveProfile("c", by: -1)
+    let restored = UsageStore(dataDirectory: directory)
+    #expect(restored.menuBarProfiles.map(\.id) == ["c", "a"])
+    #expect(restored.visibleProfiles.map(\.id) == ["c", "a", "b"])
+    #expect(restored.realProfiles.count == 3)
+    restored.remove(profiles[2])
+    restored.remove(profiles[0])
+    #expect(restored.menuBarProfiles.map(\.id) == ["b"])
+    restored.remove(profiles[1])
+    #expect(restored.menuBarProfiles.isEmpty)
+    #expect(UsageStore(dataDirectory: directory).visibleProfiles.isEmpty)
 }

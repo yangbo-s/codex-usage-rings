@@ -46,11 +46,29 @@ public struct RateSnapshot: Codable, Equatable {
     public var planType: String?
     public var primary: UsageWindow?
     public var secondary: UsageWindow?
+    public var credits: CreditBalance?
 
-    public init(primary: UsageWindow?, secondary: UsageWindow?, planType: String? = nil) {
+    public init(primary: UsageWindow?, secondary: UsageWindow?, planType: String? = nil,
+                credits: CreditBalance? = nil) {
         self.primary = primary
         self.secondary = secondary
         self.planType = planType
+        self.credits = credits
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case limitId, limitName, planType, primary, secondary, credits
+    }
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        limitId = try values.decodeIfPresent(String.self, forKey: .limitId)
+        limitName = try values.decodeIfPresent(String.self, forKey: .limitName)
+        planType = try values.decodeIfPresent(String.self, forKey: .planType)
+        primary = try values.decodeIfPresent(UsageWindow.self, forKey: .primary)
+        secondary = try values.decodeIfPresent(UsageWindow.self, forKey: .secondary)
+        // Optional credit details must not discard valid quota windows.
+        credits = try? values.decodeIfPresent(CreditBalance.self, forKey: .credits)
     }
 }
 
@@ -97,6 +115,12 @@ public struct AccountUsage: Equatable {
         self.resetCredits = resetCredits
     }
 
+    public var usesCreditFallback: Bool {
+        guard limits.credits?.isAvailable == true else { return false }
+        // This indicates fallback availability, not a claim that a debit was observed.
+        return [limits.primary, limits.secondary].contains { $0?.remaining == 0 }
+    }
+
     public var rings: RingPresentation {
         let windows = [limits.primary, limits.secondary].compactMap { $0 }
         let fiveHour = windows.first { $0.windowDurationMins == 300 }
@@ -105,7 +129,7 @@ public struct AccountUsage: Equatable {
         // Only real windows are drawn; a lone five-hour window is a single ring.
         return RingPresentation(outer: other ?? fiveHour,
                                 inner: other == nil ? nil : fiveHour,
-                                bankedResetCount: bankedResetCount)
+                                bankedResetCount: bankedResetCount, usesCredits: usesCreditFallback)
     }
 }
 
@@ -113,15 +137,21 @@ public struct RingPresentation: Equatable {
     public var outer: UsageWindow?
     public var inner: UsageWindow?
     public var bankedResetCount: Int?
+    public var usesCredits: Bool
 
-    public init(outer: UsageWindow? = nil, inner: UsageWindow? = nil, bankedResetCount: Int? = nil) {
+    public init(outer: UsageWindow? = nil, inner: UsageWindow? = nil, bankedResetCount: Int? = nil,
+                usesCredits: Bool = false) {
         self.outer = outer
         self.inner = inner
         self.bankedResetCount = bankedResetCount
+        self.usesCredits = usesCredits
     }
 
     public var percentage: String { outer?.percentage ?? "—" }
-    public var number: String { outer?.remaining.map { String(Int($0.rounded())) } ?? "—" }
+    public var number: String { usesCredits ? "C" : outer?.remaining.map { String(Int($0.rounded())) } ?? "—" }
+    public var accessibilitySummary: String {
+        usesCredits ? "额度已耗尽，尚有 Credits" : "剩余 \(percentage)"
+    }
     public var isNested: Bool { inner != nil }
 }
 
@@ -156,13 +186,32 @@ public struct Settings: Codable, Equatable {
     public var autoConnectLocal: Bool
     public var autoHideEnabled: Bool
     public private(set) var autoHideDelaySeconds: Int
+    public private(set) var menuBarRingLimit: Int?
 
     public init(profiles: [Profile] = [], autoConnectLocal: Bool = true,
-                autoHideEnabled: Bool = true, autoHideDelaySeconds: Int = 3) {
+                autoHideEnabled: Bool = true, autoHideDelaySeconds: Int = 3,
+                menuBarRingLimit: Int? = nil) {
         self.profiles = profiles.filter { $0.kind != .legacyDemo }
         self.autoConnectLocal = autoConnectLocal
         self.autoHideEnabled = autoHideEnabled
         self.autoHideDelaySeconds = min(300, max(1, autoHideDelaySeconds))
+        self.menuBarRingLimit = menuBarRingLimit.map { max(1, $0) }
+    }
+
+    public var menuBarProfiles: [Profile] {
+        Array(profiles.prefix(menuBarRingLimit ?? profiles.count))
+    }
+
+    public mutating func setMenuBarRingLimit(_ count: Int) {
+        menuBarRingLimit = min(max(1, profiles.count), max(1, count))
+    }
+
+    public mutating func moveProfile(_ id: String, by offset: Int) {
+        guard let source = profiles.firstIndex(where: { $0.id == id }),
+              offset == -1 || offset == 1 else { return }
+        let destination = source + offset
+        guard profiles.indices.contains(destination) else { return }
+        profiles.swapAt(source, destination)
     }
 
     public mutating func setAutoHideDelay(_ seconds: Int) {
@@ -170,7 +219,7 @@ public struct Settings: Codable, Equatable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case profiles, autoConnectLocal, autoHideEnabled, autoHideDelaySeconds
+        case profiles, autoConnectLocal, autoHideEnabled, autoHideDelaySeconds, menuBarRingLimit
     }
 
     public init(from decoder: Decoder) throws {
@@ -181,6 +230,7 @@ public struct Settings: Codable, Equatable {
         autoHideEnabled = try container.decodeIfPresent(Bool.self, forKey: .autoHideEnabled) ?? true
         let seconds = try container.decodeIfPresent(Int.self, forKey: .autoHideDelaySeconds) ?? 3
         autoHideDelaySeconds = min(300, max(1, seconds))
+        menuBarRingLimit = (try? container.decodeIfPresent(Int.self, forKey: .menuBarRingLimit)).map { max(1, $0) }
     }
 }
 

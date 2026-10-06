@@ -48,7 +48,7 @@ enum RingRenderer {
             let outerWidth = outerStrokeWidth(nested: rings.isNested, diameter: diameter)
             let outerRadius = diameter / 2 - outerWidth / 2 - 0.6 * scale
             let track = NSColor.labelColor.withAlphaComponent(0.18)
-            let color = UsagePalette.color(remaining: rings.outer?.remaining, stale: stale)
+            let color = UsagePalette.color(remaining: rings.usesCredits ? 0 : rings.outer?.remaining, stale: stale)
             stroke(center: center, radius: outerRadius, width: outerWidth,
                    remaining: rings.outer?.remaining, color: color, track: track)
             let innerRadius = 6.2 * scale
@@ -58,7 +58,8 @@ enum RingRenderer {
             }
 
             let holeRadius = rings.isNested ? innerRadius - 0.525 * scale : outerRadius - outerWidth / 2
-            let label = labelLayout(text, holeRadius: holeRadius, scale: scale)
+            let label = labelLayout(text, holeRadius: holeRadius, scale: scale,
+                                    color: rings.usesCredits || rings.outer?.remaining == 0 ? color : .labelColor)
             if let context = NSGraphicsContext.current?.cgContext {
                 context.saveGState()
                 context.textMatrix = .identity
@@ -98,12 +99,13 @@ enum RingRenderer {
         let fontSize: CGFloat
     }
 
-    static func labelLayout(_ text: String, holeRadius: CGFloat, scale: CGFloat) -> LabelLayout {
+    static func labelLayout(_ text: String, holeRadius: CGFloat, scale: CGFloat,
+                            color: NSColor = .labelColor) -> LabelLayout {
         var fontSize = 8 * scale
         while true {
             let attributes: [NSAttributedString.Key: Any] = [
                 .font: NSFont.monospacedDigitSystemFont(ofSize: fontSize, weight: .semibold),
-                NSAttributedString.Key(kCTForegroundColorAttributeName as String): NSColor.labelColor.cgColor
+                NSAttributedString.Key(kCTForegroundColorAttributeName as String): color.cgColor
             ]
             let line = CTLineCreateWithAttributedString(NSAttributedString(string: text, attributes: attributes))
             // Glyph outlines exclude invisible line spacing, so 100 can grow without touching the ring.

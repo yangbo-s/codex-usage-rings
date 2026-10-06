@@ -60,7 +60,9 @@ struct UsagePanel: View {
         let usage = selected?.usage
         let rows = (usage?.availableResetCredits.count ?? 0) + ((usage?.unlistedResetCount ?? 0) > 0 ? 1 : 0)
         let resetHeight: CGFloat = rows > 0 ? 30 + CGFloat(min(4, rows)) * 22 : 0
-        return min(560, 285 + CGFloat(store.visibleProfiles.count - 1) * 80 + resetHeight)
+        let creditHeight: CGFloat = usage == nil ? 0 : (usage?.usesCreditFallback == true ? 57 : 32)
+        let innerHeight: CGFloat = selected?.rings.isNested == true ? 65 : 0
+        return min(560, 285 + CGFloat(store.visibleProfiles.count - 1) * 80 + resetHeight + creditHeight + innerHeight)
     }
 
     private var header: some View {
@@ -72,7 +74,7 @@ struct UsagePanel: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(store.managing ? "账户与设置" : "Usage Rings")
                     .font(.system(size: 18, weight: .semibold))
-                Text(store.managing ? "每个账户，一个圆环" : "\(store.visibleProfiles.count) 个账户 · 剩余额度")
+                Text(store.managing ? "账户、菜单栏与显示偏好" : "\(store.visibleProfiles.count) 个账户 · 剩余额度")
                     .font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
             }
             Spacer()
@@ -89,7 +91,7 @@ struct UsagePanel: View {
                         .accessibilityHidden(true)
                     Text(store.connecting ? "正在连接本机账户…" : "连接你的第一个账户")
                         .font(.system(size: 14, weight: .semibold))
-                    Text("每连接一个账户，顶栏就多一个圆环。")
+                    Text("连接后可设置顶栏圆环的数量和顺序。")
                         .font(.system(size: 12)).foregroundStyle(RingStyle.secondaryText)
                     Button("连接本机 Codex") { Task { await store.connectLocal() } }
                         .buttonStyle(.borderedProminent).disabled(store.connecting)
@@ -129,7 +131,7 @@ struct UsagePanel: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("\(profile.name)，\(state.planName ?? "套餐未知")，剩余 \(state.rings.percentage)，Banked reset \(state.usage?.bankedResetCount.map { "\($0) 次" } ?? "未知")，查看详情")
+            .accessibilityLabel("\(profile.name)，\(state.planName ?? "套餐未知")，\(state.rings.accessibilitySummary)，Banked reset \(state.usage?.bankedResetCount.map { "\($0) 次" } ?? "未知")，查看详情")
             .padding(.horizontal, 20).padding(.vertical, 16)
 
             if selected {
@@ -139,6 +141,7 @@ struct UsagePanel: View {
                     } else {
                         Text("暂无用量数据").font(.system(size: 12)).foregroundStyle(RingStyle.secondaryText)
                     }
+                    if let usage = state.usage { creditRow(usage) }
                     if let inner = state.rings.inner { windowRow(inner, label: "内环 · \(inner.title)", stale: state.isStale) }
                     if let usage = state.usage, (usage.bankedResetCount ?? 0) > 0 {
                         resetDetails(usage)
@@ -156,6 +159,24 @@ struct UsagePanel: View {
             }
         }
         .background(selected ? Color.primary.opacity(0.025) : .clear)
+    }
+
+    private func creditRow(_ usage: AccountUsage) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("Credit 余额").font(.system(size: 11, weight: .medium))
+                Spacer(minLength: 0)
+                Text(usage.limits.credits?.formattedBalance() ?? "—")
+                    .font(.system(size: 12, weight: .semibold)).monospacedDigit()
+                    .multilineTextAlignment(.trailing)
+                    .textSelection(.enabled)
+            }
+            if usage.usesCreditFallback {
+                Text("额度已耗尽，尚有 Credits")
+                    .font(.system(size: 10)).foregroundStyle(RingStyle.secondaryText)
+            }
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func resetDetails(_ usage: AccountUsage) -> some View {
@@ -210,6 +231,10 @@ struct UsagePanel: View {
 
     private var management: some View {
         VStack(alignment: .leading, spacing: 18) {
+            if !store.visibleProfiles.isEmpty {
+                menuBarSettings
+                Divider()
+            }
             VStack(alignment: .leading, spacing: 10) {
                 Toggle("自动收起面板", isOn: Binding(
                     get: { store.settings.autoHideEnabled },
@@ -234,21 +259,6 @@ struct UsagePanel: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Divider()
-            ForEach(store.visibleProfiles) { profile in
-                VStack(spacing: 8) {
-                    HStack {
-                        TextField("账户名称", text: Binding(
-                            get: { profile.name },
-                            set: { value in store.update(profile.id) { $0.name = String(value.prefix(32)) } }
-                        ))
-                        .textFieldStyle(.roundedBorder).accessibilityLabel("账户名称").focused($editingField)
-                        Button("移除") { store.remove(profile) }.font(.system(size: 11)).buttonStyle(.plain)
-                    }
-                    Text(profile.kind == .local ? "跟随本机 Codex 登录" : "独立登录账户")
-                        .font(.system(size: 10)).foregroundStyle(RingStyle.secondaryText)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-            }
             VStack(spacing: 9) {
                 Button { Task { await store.connectLocal() } } label: {
                     Label("连接本机 Codex", systemImage: "desktopcomputer").frame(maxWidth: .infinity)
@@ -297,6 +307,55 @@ struct UsagePanel: View {
             .fixedSize(horizontal: false, vertical: true)
         }
         .padding(20)
+    }
+
+    private var menuBarSettings: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            if store.visibleProfiles.count == 1 {
+                Text("菜单栏显示 1 个圆环").font(.system(size: 12, weight: .medium))
+            } else {
+                Picker("菜单栏圆环", selection: Binding(
+                    get: { store.menuBarProfiles.count },
+                    set: { store.setMenuBarRingLimit($0) }
+                )) {
+                    ForEach(1...store.visibleProfiles.count, id: \.self) { count in
+                        Text("\(count) 个").tag(count)
+                    }
+                }
+                .font(.system(size: 12))
+            }
+            Text(store.visibleProfiles.count == 1
+                 ? "只有一个账户时自动显示。"
+                 : "按下列顺序从左到右显示前 \(store.menuBarProfiles.count) 个账户，其余账户仍可在面板查看。")
+                .font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
+                .fixedSize(horizontal: false, vertical: true)
+            ForEach(Array(store.visibleProfiles.enumerated()), id: \.element.id) { index, profile in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        TextField("账户名称", text: Binding(
+                            get: { profile.name },
+                            set: { value in store.update(profile.id) { $0.name = String(value.prefix(32)) } }
+                        ))
+                        .textFieldStyle(.roundedBorder).accessibilityLabel("账户名称").focused($editingField)
+                        if store.visibleProfiles.count > 1 {
+                            Button { store.moveProfile(profile.id, by: -1) } label: {
+                                Image(systemName: "chevron.up").frame(width: 20, height: 24)
+                            }
+                            .disabled(index == 0).help("向前移").accessibilityLabel("将 \(profile.name) 向前移")
+                            Button { store.moveProfile(profile.id, by: 1) } label: {
+                                Image(systemName: "chevron.down").frame(width: 20, height: 24)
+                            }
+                            .disabled(index == store.visibleProfiles.count - 1)
+                            .help("向后移").accessibilityLabel("将 \(profile.name) 向后移")
+                        }
+                        Button("移除") { store.remove(profile) }.font(.system(size: 11))
+                    }
+                    .buttonStyle(.plain)
+                    Text("\(profile.kind == .local ? "跟随本机 Codex 登录" : "独立登录账户") · \(index < store.menuBarProfiles.count ? "菜单栏显示" : "仅面板显示")")
+                        .font(.system(size: 10)).foregroundStyle(RingStyle.secondaryText)
+                }
+            }
+        }
     }
 
     private var footer: some View {

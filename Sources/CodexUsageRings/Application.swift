@@ -19,6 +19,7 @@ struct UsageRingsMain {
                         return count
                     }
                     print("resetExpiryKnown=\(timed) nonExpiring=\(usage.resetExpirationGroups.first(where: { $0.expiration == .never })?.count ?? 0) expiryUnknown=\(usage.resetExpirationGroups.first(where: { $0.expiration == .unknown })?.count ?? 0)")
+                    print("creditBalanceKnown=\(usage.limits.credits?.amount != nil) creditAvailable=\(usage.limits.credits?.isAvailable == true) ringLabel=\(usage.rings.number)")
                     client.stop()
                     exit(0)
                 } catch {
@@ -80,7 +81,7 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
 
     private func updateItems() {
         autoHide.configure(enabled: store.settings.autoHideEnabled, seconds: store.settings.autoHideDelaySeconds)
-        let profiles = store.visibleProfiles
+        let profiles = store.menuBarProfiles
         let desired = profiles.isEmpty ? ["launcher"] : profiles.map(\.id)
         if desired != itemOrder {
             let reopen = popover.isShown
@@ -108,7 +109,8 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
                     .map { "\($0.title) 剩余 \($0.percentage)" }.joined(separator: " · ")
                 let resets = state.usage?.bankedResetCount.map { "Banked reset \($0) 次" } ?? "Banked reset 未知"
                 let stale = state.isStale ? " · 数据已过期" : ""
-                button.toolTip = "\(profile.name) · \(limits.isEmpty ? "等待同步" : limits) · \(resets)\(stale)"
+                let creditStatus = state.rings.usesCredits ? " · \(state.rings.accessibilitySummary)" : ""
+                button.toolTip = "\(profile.name) · \(limits.isEmpty ? "等待同步" : limits)\(creditStatus) · \(resets)\(stale)"
             } else {
                 button.image = RingRenderer.image(RingPresentation())
                 button.toolTip = "Usage Rings · 点击连接账户"

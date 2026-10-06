@@ -77,6 +77,7 @@ final class UsageStore: ObservableObject {
 
     var visibleProfiles: [Profile] { settings.profiles }
     var realProfiles: [Profile] { settings.profiles }
+    var menuBarProfiles: [Profile] { settings.menuBarProfiles }
 
     var isRefreshing: Bool { states.values.contains { $0.isRefreshing } }
 
@@ -129,6 +130,16 @@ final class UsageStore: ObservableObject {
     func update(_ id: String, edit: (inout Profile) -> Void) {
         guard let index = settings.profiles.firstIndex(where: { $0.id == id }) else { return }
         edit(&settings.profiles[index])
+        save()
+    }
+
+    func setMenuBarRingLimit(_ count: Int) {
+        settings.setMenuBarRingLimit(count)
+        save()
+    }
+
+    func moveProfile(_ id: String, by offset: Int) {
+        settings.moveProfile(id, by: offset)
         save()
     }
 
