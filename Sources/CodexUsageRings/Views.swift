@@ -18,6 +18,7 @@ enum RingStyle {
 struct UsagePanel: View {
     @ObservedObject var store: UsageStore
     @ObservedObject var loginAtLaunch: LoginAtLaunch
+    @ObservedObject var updater: SoftwareUpdater
     var onHover: (Bool) -> Void = { _ in }
     var onEditing: (Bool) -> Void = { _ in }
     @FocusState private var editingField: Bool
@@ -59,8 +60,9 @@ struct UsagePanel: View {
         let selected = store.selectedID.flatMap { store.states[$0] }
         let usage = selected?.usage
         let rows = (usage?.availableResetCredits.count ?? 0) + ((usage?.unlistedResetCount ?? 0) > 0 ? 1 : 0)
-        let resetHeight: CGFloat = rows > 0 ? 30 + CGFloat(min(4, rows)) * 22 : 0
-        let creditHeight: CGFloat = usage == nil ? 0 : (usage?.usesCreditFallback == true ? 57 : 32)
+        let resetHeight: CGFloat = rows > 0 ? 17 + CGFloat(min(4, rows)) * 22 : 0
+        let creditHeight: CGFloat = usage?.limits.credits?.isAvailable == true
+            ? (usage?.usesCreditFallback == true ? 60 : 40) : 0
         let innerHeight: CGFloat = selected?.rings.isNested == true ? 65 : 0
         return min(560, 285 + CGFloat(store.visibleProfiles.count - 1) * 80 + resetHeight + creditHeight + innerHeight)
     }
@@ -78,6 +80,12 @@ struct UsagePanel: View {
                     .font(.system(size: 11)).foregroundStyle(RingStyle.secondaryText)
             }
             Spacer()
+            if let version = updater.availableVersion {
+                Button("更新可用", action: updater.checkForUpdates)
+                    .font(.system(size: 11)).buttonStyle(.bordered)
+                    .disabled(!updater.canCheckForUpdates)
+                    .help("查看版本 \(version)")
+            }
             if store.isRefreshing || store.connecting { ProgressView().controlSize(.small).accessibilityLabel("正在同步") }
         }
         .padding(.horizontal, 20).padding(.vertical, 18)
@@ -135,15 +143,23 @@ struct UsagePanel: View {
             .padding(.horizontal, 20).padding(.vertical, 16)
 
             if selected {
-                VStack(alignment: .leading, spacing: 13) {
-                    if let outer = state.rings.outer {
-                        windowRow(outer, label: state.rings.isNested ? "外环 · \(outer.title)" : outer.title, stale: state.isStale)
-                    } else {
-                        Text("暂无用量数据").font(.system(size: 12)).foregroundStyle(RingStyle.secondaryText)
+                VStack(alignment: .leading, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 13) {
+                        if let outer = state.rings.outer {
+                            windowRow(outer, label: state.rings.isNested ? "外环 · \(outer.title)" : outer.title, stale: state.isStale)
+                        } else {
+                            Text("暂无用量数据").font(.system(size: 12)).foregroundStyle(RingStyle.secondaryText)
+                        }
+                        if let inner = state.rings.inner {
+                            windowRow(inner, label: "内环 · \(inner.title)", stale: state.isStale)
+                        }
                     }
-                    if let usage = state.usage { creditRow(usage) }
-                    if let inner = state.rings.inner { windowRow(inner, label: "内环 · \(inner.title)", stale: state.isStale) }
+                    if let usage = state.usage, usage.limits.credits?.isAvailable == true {
+                        Divider()
+                        creditRow(usage)
+                    }
                     if let usage = state.usage, (usage.bankedResetCount ?? 0) > 0 {
+                        Divider()
                         resetDetails(usage)
                     }
                     if let error = state.error {
@@ -166,7 +182,9 @@ struct UsagePanel: View {
             HStack(alignment: .firstTextBaseline, spacing: 12) {
                 Text("Credit 余额").font(.system(size: 11, weight: .medium))
                 Spacer(minLength: 0)
-                Text(usage.limits.credits?.formattedBalance() ?? "—")
+                Text(usage.limits.credits.map { credits in
+                    credits.unlimited == true || credits.amount != nil ? credits.formattedBalance() : "余额未知"
+                } ?? "余额未知")
                     .font(.system(size: 12, weight: .semibold)).monospacedDigit()
                     .multilineTextAlignment(.trailing)
                     .textSelection(.enabled)
@@ -181,7 +199,6 @@ struct UsagePanel: View {
 
     private func resetDetails(_ usage: AccountUsage) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Reset 到期时间").font(.system(size: 11, weight: .medium))
             ForEach(usage.availableResetCredits, id: \.id) { credit in
                 resetRow(title: "Full reset", expiration: credit.expiration)
             }
@@ -235,6 +252,8 @@ struct UsagePanel: View {
                 menuBarSettings
                 Divider()
             }
+            UpdateSettingsView(updater: updater)
+            Divider()
             VStack(alignment: .leading, spacing: 10) {
                 Toggle("自动收起面板", isOn: Binding(
                     get: { store.settings.autoHideEnabled },

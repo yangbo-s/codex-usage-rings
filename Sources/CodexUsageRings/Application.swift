@@ -57,6 +57,7 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
 final class MenuBarController: NSObject, NSPopoverDelegate {
     private let store: UsageStore
     private let loginAtLaunch = LoginAtLaunch()
+    private let updater = SoftwareUpdater()
     private var items: [String: NSStatusItem] = [:]
     private var itemOrder: [String] = []
     private let popover = NSPopover()
@@ -69,7 +70,7 @@ final class MenuBarController: NSObject, NSPopoverDelegate {
         popover.behavior = .transient
         popover.delegate = self
         popover.contentViewController = NSHostingController(rootView: UsagePanel(
-            store: store, loginAtLaunch: loginAtLaunch,
+            store: store, loginAtLaunch: loginAtLaunch, updater: updater,
             onHover: { [weak self] inside in self?.autoHide.pointerChanged(inside: inside) },
             onEditing: { [weak self] editing in self?.autoHide.editingChanged(editing) }
         ))

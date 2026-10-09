@@ -1,0 +1,32 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Codex Usage Rings</title>
+        <item>
+            <title>0.6.0</title>
+            <pubDate>Fri, 09 Oct 2026 12:59:00 -0400</pubDate>
+            <link>https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.6.0</link>
+            <sparkle:version>9</sparkle:version>
+            <sparkle:shortVersionString>0.6.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+            <sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>
+            <description sparkle:format="markdown"><![CDATA[# v0.6.0 — 应用内更新与清晰分组
+
+- 删除「Reset 到期时间」标题。用量、Credit 余额和 Full reset 之间以细线分隔。
+- 没有可用 Credit 或 Full reset 时隐藏对应区块；未知余额但明确有 Credits 时显示「余额未知」。
+- 新增 Sparkle 应用内更新，支持下载、签名校验及更新重启。
+- 设置中新增当前版本、「检查更新…」、「自动检查更新」和「自动下载并在退出时安装」。默认每天检查一次，自动下载安装默认关闭。
+- 后台发现新版本时，面板显示「更新可用」，设置提供「查看更新…」入口。
+
+## 安装与升级
+
+从本次 Release 下载 `Codex-Usage-Rings-v0.6.0-macos-arm64.dmg`，退出旧版后拖入 Applications 替换，账户和设置保留。
+
+**v0.5.0 及更早版本需要手动安装这一次**，安装 v0.6.0 后即可通过设置检查后续更新。ZIP 是 Sparkle 更新包，`appcast.xml` 是更新清单，`SHA256SUMS.txt` 可用于下载校验。
+
+适用于 Apple Silicon、macOS 13+。应用仍为未公证的 ad-hoc 签名预览版，首次下载打开可能需要系统确认。Sparkle 更新包使用独立 EdDSA 签名；系统对首次安装的限制不因此消失。
+]]></description>
+            <enclosure url="https://github.com/yangbo-s/codex-usage-rings/releases/download/v0.6.0/Codex-Usage-Rings-v0.6.0-macos-arm64.zip" length="2782231" type="application/octet-stream" sparkle:edSignature="5xmBpsWpnnWisWWVrSwuyHZwIJodTeZ5MsmRmYKx7EtAleFReCujtE3BLM+oQCxUt8FVFmfq8R372uzQEiTeAQ=="/>
+        </item>
+    </channel>
+</rss>

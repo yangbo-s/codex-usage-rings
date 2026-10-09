@@ -6,8 +6,15 @@
     <key>CFBundleName</key><string>Codex Usage Rings</string>
     <key>CFBundleDisplayName</key><string>Usage Rings</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
-    <key>CFBundleVersion</key><string>8</string>
-    <key>CFBundleShortVersionString</key><string>0.5.0</string>
+    <key>CFBundleVersion</key><string>9</string>
+    <key>CFBundleShortVersionString</key><string>0.6.0</string>
+    <key>SUFeedURL</key><string>https://raw.githubusercontent.com/yangbo-s/codex-usage-rings/main/appcast.xml</string>
+    <key>SUPublicEDKey</key><string>SF761ipWN74NyK+B1cZ6PmGVg5kbOBoRv3o7wUevr6k=</string>
+    <key>SUEnableAutomaticChecks</key><true/>
+    <key>SUScheduledCheckInterval</key><integer>86400</integer>
+    <key>SUAutomaticallyUpdate</key><false/>
+    <key>SUEnableSystemProfiling</key><false/>
+    <key>SUVerifyUpdateBeforeExtraction</key><true/>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>LSUIElement</key><true/>

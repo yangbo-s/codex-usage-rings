@@ -6,13 +6,13 @@
 
 把 Codex 剩余额度放进 Mac 顶部菜单栏。可选择显示哪些账户圆环及其顺序，环内显示剩余数字（省略 %）或额度耗尽后的 `C`，点击查看额度周期、Credit 余额、重置时间和账户设置。
 
-[下载 v0.5.0](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.5.0) · [更新记录](docs/releases/v0.5.0.md) · [MIT License](LICENSE)
+[下载 v0.6.0](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.6.0) · [更新记录](docs/releases/v0.6.0.md) · [MIT License](LICENSE)
 
 ## 安装
 
 当前预编译包适用于 **Apple Silicon（M 系列芯片）和 macOS 13 或更高版本**。使用安装包无需安装 Swift 或 Xcode。
 
-1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.5.0) 下载 `Codex-Usage-Rings-v0.5.0-macos-arm64.dmg`。
+1. 从 [Release](https://github.com/yangbo-s/codex-usage-rings/releases/tag/v0.6.0) 下载 `Codex-Usage-Rings-v0.6.0-macos-arm64.dmg`。
 2. 双击 DMG，将里面的 `Codex Usage Rings.app` 拖到 `Applications` 文件夹入口。复制完成后推出磁盘映像，再从“应用程序”打开。
 3. 先确保本机已安装 Codex CLI 或 Codex / ChatGPT 桌面应用，并使用 **ChatGPT 账户**登录。此工具复用本机 Codex 获取订阅用量；API Key 登录不提供这种额度。
 4. 首次启动会尝试连接本机已有登录。成功后，菜单栏出现一个真实账户圆环；未连接时显示一个灰色入口，点击即可连接。
@@ -27,7 +27,19 @@ Release 同时提供 `SHA256SUMS.txt`。把它与下载的 DMG 放在同一个�
 shasum -a 256 --ignore-missing -c SHA256SUMS.txt
 ```
 
-v0.5.0 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。
+使用 DMG 首次安装；Release 中的 ZIP 用于 Sparkle 应用内更新。
+
+## 软件更新
+
+在 **账户与设置 → 软件更新** 查看版本并点击 **检查更新…**。发现新版本后，可下载并选择更新重启，账户和设置保留。
+
+后台发现更新时，面板会显示 **更新可用**，设置中可点击 **查看更新…**。
+
+- **自动检查更新**：默认开启，每天检查一次。
+- **自动下载并在退出时安装**：默认关闭；开启后后台下载，退出应用时安装，下次启动使用新版。安装位置需要额外权限时，系统仍可能要求授权。
+- **v0.5.0 及更早版本**没有更新器，需要手动安装一次 v0.6.0。
+
+更新通过 Sparkle 获取 GitHub 上的更新清单和安装包，解压前校验 EdDSA 签名，不发送账户凭据或启用 Sparkle 系统信息采集。应用仍未经过 Apple 公证，首次安装可能需要系统确认；不能保证所有 macOS 环境下的后续更新都没有系统提示。
 
 ## 圆环怎么看
 
@@ -42,9 +54,9 @@ v0.5.0 使用 DMG 分发；旧版 v0.2.0 的 ZIP 保留在对应 Release。
 | 灰色弧线和过期提示 | 同步失败时保留的上一次快照 |
 | 红色 `C` | 至少一个额度窗口已耗尽且仍有可用 credits；无 credits 时耗尽窗口保持 `0`，未耗尽时正常显示数字 |
 
-默认显示全部账户圆环；可在设置中限定数量并排序。入口按内容收紧宽度，最多显示两列 reset 标记。悬停查看准确次数和简要用量；点击圆环即可查看额度窗口与 **Reset 到期时间**，每份 reset 独立一行：左侧加粗 **Full reset**，右侧如 **Expires October 29, 14:44**。日期按系统时区从早到晚排列，跨年时补充年份；同一到期时间也分行显示。无期限显示 No expiry，未知期限显示 Expiry unknown；明细不完整的差额单独汇总为未知。已到期显示 Expired，余额仍以服务端为准。应用没有演示模式。
+默认显示全部账户圆环；可在设置中限定数量并排序。入口按内容收紧宽度，最多显示两列 reset 标记。悬停查看准确次数和简要用量；点击圆环即可查看额度窗口与 Full reset 明细，每份 reset 独立一行：左侧加粗 **Full reset**，右侧如 **Expires October 29, 14:44**。日期按系统时区从早到晚排列，跨年时补充年份；同一到期时间也分行显示。无期限显示 No expiry，未知期限显示 Expiry unknown；明细不完整的差额单独汇总为未知。没有可用 reset 时不显示该区块。已到期显示 Expired，余额仍以服务端为准。应用没有演示模式。
 
-**Credit 余额**显示在详情的每周额度（或当前外环额度）下方，不在菜单栏显示数值。按系统数字格式最多显示两位小数，正数不足 0.01 显示 `< 0.01`，无限为“无限”，缺失或非法余额为 `—`。`C` 只表示额度耗尽且仍有 credits，不代表已观察到扣款或保证当前请求能执行；用量接口不提供实时扣款标志。额度恢复后回到数字，credits 用完后回到对应额度数字；过期状态继续使用灰色。
+**Credit 余额**显示在用量详情下方，不在菜单栏显示数值。额度、Credit 和 Full reset 按实际显示的区块用细线分隔；双额度窗口放在同一组。按系统数字格式最多显示两位小数，正数不足 0.01 显示 `< 0.01`，无限为“无限”。零余额、无 Credits 或非法余额时隐藏该区块；明确有 Credits 但未提供具体金额时显示“余额未知”。`C` 只表示额度耗尽且仍有 credits，不代表已观察到扣款或保证当前请求能执行；用量接口不提供实时扣款标志。额度恢复后回到数字，credits 用完后回到对应额度数字；过期状态继续使用灰色。
 
 账户套餐 `pro` 显示为 **Pro 200**，`prolite` / `promax` 分别显示为 Pro Lite / Pro Max。
 
@@ -112,7 +124,7 @@ Credit 余额取同一额度快照的 `credits.balance`、`hasCredits`、`unlimi
 
 ## 从源码构建
 
-需要 macOS、Swift 6 工具链及 Xcode Command Line Tools，无第三方包依赖。
+需要 macOS、Swift 6 工具链及 Xcode Command Line Tools。SwiftPM 自动下载固定版本的 Sparkle 更新框架。
 
 ```sh
 git clone https://github.com/yangbo-s/codex-usage-rings.git
@@ -122,7 +134,7 @@ bash scripts/build-app.sh
 open "dist/Codex Usage Rings.app" --args --show
 ```
 
-输出位于 `dist/Codex Usage Rings.app`，构建脚本会加入图标并进行 ad-hoc 签名。
+输出位于 `dist/Codex Usage Rings.app`，构建脚本会加入图标、Sparkle 框架及其许可证，并进行 ad-hoc 签名与递归验签。
 
 开发用环境变量：
 
@@ -145,20 +157,32 @@ CODEX_CLI_PATH="/absolute/path/to/codex" \
 swift run CodexUsageRings --probe
 ```
 
-把当前构建的应用打成带 Applications 拖拽入口的 DMG，并生成校验文件：
+维护者发布前递增 `Resources/Info.plist` 的两个版本号，并添加 `docs/releases/v版本号.md`。首次准备官方签名工具：
+
+```sh
+bash scripts/setup-sparkle-tools.sh
+```
+
+打包要求钥匙串中存在账户名为 `dev.local.codex-usage-rings` 的 Sparkle EdDSA 私钥，且对应公钥与 `SUPublicEDKey` 一致。私钥不得提交到仓库，换机前应在安全位置备份；没有原私钥就不能给已安装用户签发可信更新。Fork 应使用自己的密钥、bundle ID 和更新源，不能沿用本项目的公钥进行发布。
+
+生成 DMG、更新 ZIP、带更新包签名的 appcast 及校验清单：
 
 ```sh
 bash scripts/package-release.sh
 ```
 
+输出在 `dist/releases/v版本号/`，同时更新仓库根目录 `appcast.xml`。将 DMG、ZIP、appcast 和 SHA256SUMS 上传到对应 GitHub Release，并推送根目录 appcast。更新源使用固定的 raw GitHub 地址，支持本项目的预览版发布，不依赖 GitHub 的 latest 正式版接口。可用 `SPARKLE_BIN` 指定官方签名工具目录。
+
 修改图标源图后，运行 `bash scripts/build-icon.sh`，再重新构建。原始 PNG 和 macOS `.icns` 均保存在 [Resources](Resources)。Logo 由 AI 生成。
 
 ## 已知限制
 
-当前为预览版，仅提供 Apple Silicon 安装包，尚未经过 Developer ID 签名与 Apple 公证，也不支持自动更新。多账户登录、系统登录启动、辅助功能及不同 macOS 版本的兼容性仍需完善；实际耗电随账户数量和使用情况变化。
+当前为预览版，仅提供 Apple Silicon 安装包，尚未经过 Developer ID 签名与 Apple 公证。多账户登录、系统登录启动、辅助功能及不同 macOS 版本的兼容性仍需完善；实际耗电随账户数量和使用情况变化。
 
 参考：[Codex App Server](https://learn.chatgpt.com/docs/app-server)、[认证与凭据存储](https://learn.chatgpt.com/docs/auth)、[SMAppService](https://developer.apple.com/documentation/servicemanagement/smappservice)。
 
 ## 许可证
 
 本项目采用 [MIT License](LICENSE)，允许使用、修改、分发和商用；分发时须保留版权与许可声明。
+
+应用包含 [Sparkle](https://github.com/sparkle-project/Sparkle)，其许可声明随安装包保存在 `Contents/Resources/Sparkle-LICENSE.txt`。

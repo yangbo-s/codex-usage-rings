@@ -127,16 +127,20 @@ import UsageCore
         }
         try save(comparison, to: directory.appendingPathComponent("full-comparison-\(name).png"))
         store.managing = false
-        try savePanel(store, height: 403, appearance: appearance, to: directory.appendingPathComponent("overview-\(name).png"))
+        try savePanel(store, appearance: appearance, to: directory.appendingPathComponent("overview-\(name).png"))
         store.managing = true
-        try savePanel(store, height: 560, appearance: appearance, to: directory.appendingPathComponent("settings-\(name).png"))
+        try savePanel(store, appearance: appearance, to: directory.appendingPathComponent("settings-\(name).png"))
     }
 }
 
-@MainActor private func savePanel(_ store: UsageStore, height: CGFloat, appearance: NSAppearance.Name, to url: URL) throws {
-    let panel = NSHostingView(rootView: UsagePanel(store: store, loginAtLaunch: LoginAtLaunch(service: FakeLoginItemService())))
-    panel.frame = NSRect(x: 0, y: 0, width: 360, height: height)
+@MainActor private func savePanel(_ store: UsageStore, appearance: NSAppearance.Name, to url: URL) throws {
+    let panel = NSHostingView(rootView: UsagePanel(
+        store: store,
+        loginAtLaunch: LoginAtLaunch(service: FakeLoginItemService()),
+        updater: SoftwareUpdater(start: false)
+    ))
     panel.appearance = NSAppearance(named: appearance)
+    panel.frame = NSRect(origin: .zero, size: panel.fittingSize)
     let window = NSWindow(contentRect: panel.frame, styleMask: [.borderless], backing: .buffered, defer: false)
     window.contentView = panel
     panel.layoutSubtreeIfNeeded()
@@ -224,15 +228,68 @@ import UsageCore
     try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
     for (label, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
         single.managing = false
-        try savePanel(single, height: 342, appearance: appearance, to: destination.appendingPathComponent("credit-overview-\(label).png"))
-        try savePanel(empty, height: 317, appearance: appearance, to: destination.appendingPathComponent("zero-overview-\(label).png"))
+        try savePanel(single, appearance: appearance, to: destination.appendingPathComponent("credit-overview-\(label).png"))
+        try savePanel(empty, appearance: appearance, to: destination.appendingPathComponent("zero-overview-\(label).png"))
         single.managing = true
-        try savePanel(single, height: 560, appearance: appearance, to: destination.appendingPathComponent("single-settings-\(label).png"))
+        try savePanel(single, appearance: appearance, to: destination.appendingPathComponent("single-settings-\(label).png"))
         multiple.managing = true
-        try savePanel(multiple, height: 560, appearance: appearance, to: destination.appendingPathComponent("multiple-settings-\(label).png"))
+        try savePanel(multiple, appearance: appearance, to: destination.appendingPathComponent("multiple-settings-\(label).png"))
         multiple.managing = false
         multiple.selectedID = "b"
-        try savePanel(multiple, height: 477, appearance: appearance, to: destination.appendingPathComponent("balance-overview-\(label).png"))
+        try savePanel(multiple, appearance: appearance, to: destination.appendingPathComponent("balance-overview-\(label).png"))
+    }
+}
+
+@Test @MainActor func detailSectionsRenderBalanceAndResetCombinations() async throws {
+    guard let output = ProcessInfo.processInfo.environment["USAGE_RINGS_SNAPSHOT_DIR"] else { return }
+    _ = NSApplication.shared
+    let destination = URL(fileURLWithPath: output)
+    try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+    let (directory, executable) = try fixture("""
+    for line in sys.stdin:
+        r = json.loads(line)
+        if 'id' not in r: continue
+        result = {}
+        if r['method'] == 'account/read': result = {'account': {'type': 'chatgpt', 'planType': 'pro'}}
+        if r['method'] == 'account/rateLimits/read':
+            profile = os.path.basename(os.environ.get('CODEX_HOME', ''))
+            limits = {'primary': {'usedPercent': 91, 'windowDurationMins': 10080, 'resetsAt': time.time() + 540000}}
+            if profile in ['credit', 'both', 'nested', 'long']:
+                limits['credits'] = {'hasCredits': True, 'unlimited': False, 'balance': '1234567890123.4567' if profile == 'long' else '59200.91'}
+            elif profile == 'zero':
+                limits['credits'] = {'hasCredits': False, 'unlimited': False, 'balance': '0'}
+            elif profile == 'invalid':
+                limits['credits'] = {'hasCredits': True, 'unlimited': False, 'balance': 'invalid'}
+            elif profile == 'unknown':
+                limits['credits'] = {'hasCredits': True, 'unlimited': False}
+            elif profile == 'unlimited':
+                limits['credits'] = {'hasCredits': True, 'unlimited': True}
+            if profile == 'nested':
+                limits['secondary'] = {'usedPercent': 24, 'windowDurationMins': 300, 'resetsAt': time.time() + 7200}
+            resets = {'availableCount': 0}
+            if profile in ['reset', 'both', 'nested']:
+                resets = {'availableCount': 1, 'credits': [{'id': 'a', 'status': 'available', 'expiresAt': 1793999820}]}
+            elif profile == 'long':
+                resets = {'availableCount': 5, 'credits': [
+                    {'id': 'a', 'status': 'available', 'expiresAt': 1828148220},
+                    {'id': 'b', 'status': 'available', 'expiresAt': None},
+                    {'id': 'c', 'status': 'available'}
+                ]}
+            result = {'rateLimits': limits, 'rateLimitResetCredits': resets}
+        print(json.dumps({'id': r['id'], 'result': result}), flush=True)
+    """)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    for variant in ["quota", "credit", "reset", "both", "nested", "zero", "invalid", "unknown", "unlimited", "long"] {
+        let profile = Profile(id: variant, name: variant == "long" ? "用于验证长账户名称的测试账户与工作空间" : "本机账户", kind: .managed)
+        try JSONEncoder().encode(Settings(profiles: [profile]))
+            .write(to: directory.appendingPathComponent("settings.json"))
+        let store = UsageStore(dataDirectory: directory, clientFactory: { CodexClient(home: $0, executable: executable) })
+        await store.refreshAll()
+        defer { store.stop() }
+        for (label, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
+            try savePanel(store, appearance: appearance,
+                          to: destination.appendingPathComponent("details-\(variant)-\(label).png"))
+        }
     }
 }
 
